@@ -32,6 +32,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
