@@ -8,6 +8,17 @@ import sys
 import uvicorn
 from pathlib import Path
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    env_file = Path(".env")
+    if env_file.exists():
+        load_dotenv(env_file)
+        print("✅ Loaded environment variables from .env file")
+except ImportError:
+    # python-dotenv not installed, skip loading .env file
+    pass
+
 def main():
     """Start the application."""
     # Set environment

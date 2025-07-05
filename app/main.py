@@ -9,8 +9,19 @@ import logging.config
 import os
 from pathlib import Path
 
+# Load environment variables from .env file in development
+try:
+    from dotenv import load_dotenv
+    if os.getenv("ENVIRONMENT", "development") == "development":
+        env_file = Path(".env")
+        if env_file.exists():
+            load_dotenv(env_file)
+except ImportError:
+    # python-dotenv not installed, skip loading .env file
+    pass
+
 from app.config import (
-    API_TITLE, API_DESCRIPTION, API_VERSION, 
+    API_TITLE, API_DESCRIPTION, API_VERSION,
     LOGGING_CONFIG, REQUIRED_DIRECTORIES
 )
 from app.api.routes import router
