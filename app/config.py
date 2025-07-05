@@ -14,9 +14,8 @@ API_VERSION = "1.0.0"
 API_HOST = "0.0.0.0"
 API_PORT = 8000
 
-# File paths
-CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "oauth_cred.json")  # OAuth credentials for company domain
-SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")  # Service account (if available)
+# File paths - Service Account only
+SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")  # Service account credentials
 
 # Tableau Configuration - All sensitive values moved to environment variables
 TABLEAU_CONFIG = {
@@ -107,13 +106,13 @@ if ENVIRONMENT == "production":
     API_PORT = int(os.getenv("PORT", 8000))
     LOGGING_CONFIG["root"]["level"] = "INFO"
 
-    # Use environment variable for OAuth credentials in production
+    # Use environment variable for Service Account credentials in production
     google_creds_env = os.getenv("GOOGLE_CREDENTIALS")
     if google_creds_env:
-        # Create temporary file for credentials
+        # Create temporary file for service account credentials
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             f.write(google_creds_env)
-            CREDENTIALS_FILE = f.name
+            SERVICE_ACCOUNT_FILE = f.name
 elif ENVIRONMENT == "development":
     # Development settings
     API_HOST = "localhost"

@@ -211,8 +211,8 @@ class RepetitionsAnalysisService:
             if upload_to_sheets:
                 try:
                     sheet_name = "Repetitions " + (datetime.now() - timedelta(days=1)).strftime("%B %d")
-                    # Use OAuth with stored refresh tokens (company domain compliant)
-                    sheets_service = get_sheets_service(use_service_account=False)
+                    # Use Service Account authentication
+                    sheets_service = get_sheets_service()
 
                     success = sheets_service.upload_csv_to_sheet(
                         config['spreadsheet_id'],

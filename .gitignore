@@ -45,13 +45,11 @@ data/archive/*
 !data/output/.gitkeep
 !data/archive/.gitkeep
 
-# Configuration files (sensitive)
+# Configuration files (sensitive) - Service Account only
 config/cred.json
 config/service-account-key.json
-config/oauth_cred.json
-oauth_cred.json
-*.pickle
-*_token.pickle
+cred.json
+service-account-key.json
 
 # Environment variables
 .env

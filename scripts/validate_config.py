@@ -60,17 +60,22 @@ def validate_config():
     ])
     print(f"Department spreadsheets configured: {'✅' if dept_configured else '❌'}")
     
-    # Check credential files
-    cred_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "oauth_cred.json")
+    # Check Service Account credentials
     service_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")
     google_creds_env = os.getenv("GOOGLE_CREDENTIALS")
-    
+
     creds_available = (
-        Path(cred_file).exists() or 
-        Path(service_file).exists() or 
+        Path(service_file).exists() or
         google_creds_env is not None
     )
-    print(f"Google credentials available: {'✅' if creds_available else '❌'}")
+    print(f"Service Account credentials available: {'✅' if creds_available else '❌'}")
+
+    if Path(service_file).exists():
+        print(f"  📄 Service Account file: {service_file}")
+    elif google_creds_env:
+        print(f"  🔐 Service Account from environment variable")
+    else:
+        print(f"  ❌ No Service Account credentials found")
     
     if tableau_configured and dept_configured and creds_available:
         print("\n🎉 Configuration validation passed! Ready for deployment.")
