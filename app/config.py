@@ -13,14 +13,18 @@ API_VERSION = "1.0.0"
 API_HOST = "0.0.0.0"
 API_PORT = 8000
 
-# File paths - Service Account only
-SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")  # Service account credentials
+# Service Account credentials - handles both file path and JSON string
+SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")
 
-# Check if we have JSON credentials in environment variable
+# Check if we have JSON credentials in GOOGLE_CREDENTIALS environment variable
 GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS")
 if GOOGLE_CREDENTIALS_JSON:
-    # Use the JSON string directly
+    # Use the JSON string from GOOGLE_CREDENTIALS
     SERVICE_ACCOUNT_FILE = GOOGLE_CREDENTIALS_JSON
+elif SERVICE_ACCOUNT_FILE and SERVICE_ACCOUNT_FILE.strip().startswith('{'):
+    # GOOGLE_SERVICE_ACCOUNT_FILE contains JSON string instead of file path
+    # This handles the case where JSON is set in GOOGLE_SERVICE_ACCOUNT_FILE
+    pass  # SERVICE_ACCOUNT_FILE already contains the JSON string
 
 # Tableau Configuration - All sensitive values moved to environment variables
 TABLEAU_CONFIG = {

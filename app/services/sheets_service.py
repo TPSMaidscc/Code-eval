@@ -23,22 +23,26 @@ class GoogleSheetsService:
     def _get_gspread_client(self):
         """Get authenticated gspread client using Service Account."""
         logger.info(f"Using Service Account authentication")
+        logger.info(f"Credentials source: {self.credentials_file[:50]}...")  # Log first 50 chars for debugging
 
         # Check if credentials_file is a JSON string or file path
-        if self.credentials_file.strip().startswith('{'):
+        if self.credentials_file and self.credentials_file.strip().startswith('{'):
             # It's a JSON string from environment variable
-            logger.info("Loading Service Account from environment variable JSON")
+            logger.info("✅ Detected JSON string - Loading Service Account from environment variable")
             try:
                 service_account_info = json.loads(self.credentials_file)
+                logger.info(f"✅ JSON parsed successfully - Project ID: {service_account_info.get('project_id', 'unknown')}")
                 creds = ServiceAccountCredentials.from_service_account_info(
                     service_account_info, scopes=GOOGLE_SCOPES
                 )
             except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON in GOOGLE_CREDENTIALS environment variable: {e}")
+                logger.error(f"❌ Invalid JSON in credentials: {e}")
+                raise ValueError(f"Invalid JSON in Service Account credentials: {e}")
         else:
             # It's a file path
-            logger.info(f"Loading Service Account from file: {self.credentials_file}")
+            logger.info(f"✅ Detected file path - Loading Service Account from file: {self.credentials_file}")
             if not os.path.exists(self.credentials_file):
+                logger.error(f"❌ Service account file not found: {self.credentials_file}")
                 raise FileNotFoundError(f"Service account key file not found: {self.credentials_file}")
 
             creds = ServiceAccountCredentials.from_service_account_file(
