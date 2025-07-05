@@ -4,7 +4,6 @@ Configuration settings for the Bot Repetitions Analysis API
 
 import os
 import json
-import tempfile
 from typing import Dict, Any
 
 # API Configuration
@@ -16,6 +15,12 @@ API_PORT = 8000
 
 # File paths - Service Account only
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "cred.json")  # Service account credentials
+
+# Check if we have JSON credentials in environment variable
+GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS")
+if GOOGLE_CREDENTIALS_JSON:
+    # Use the JSON string directly
+    SERVICE_ACCOUNT_FILE = GOOGLE_CREDENTIALS_JSON
 
 # Tableau Configuration - All sensitive values moved to environment variables
 TABLEAU_CONFIG = {
@@ -106,13 +111,7 @@ if ENVIRONMENT == "production":
     API_PORT = int(os.getenv("PORT", 8000))
     LOGGING_CONFIG["root"]["level"] = "INFO"
 
-    # Use environment variable for Service Account credentials in production
-    google_creds_env = os.getenv("GOOGLE_CREDENTIALS")
-    if google_creds_env:
-        # Create temporary file for service account credentials
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            f.write(google_creds_env)
-            SERVICE_ACCOUNT_FILE = f.name
+    # Service Account credentials are already handled above
 elif ENVIRONMENT == "development":
     # Development settings
     API_HOST = "localhost"

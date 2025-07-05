@@ -6,6 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 import pandas as pd
 import os
+import json
 import logging
 
 from app.config import GOOGLE_SCOPES, SERVICE_ACCOUNT_FILE
@@ -21,14 +22,28 @@ class GoogleSheetsService:
 
     def _get_gspread_client(self):
         """Get authenticated gspread client using Service Account."""
-        logger.info(f"Using Service Account authentication from {self.credentials_file}")
+        logger.info(f"Using Service Account authentication")
 
-        if not os.path.exists(self.credentials_file):
-            raise FileNotFoundError(f"Service account key file not found: {self.credentials_file}")
+        # Check if credentials_file is a JSON string or file path
+        if self.credentials_file.strip().startswith('{'):
+            # It's a JSON string from environment variable
+            logger.info("Loading Service Account from environment variable JSON")
+            try:
+                service_account_info = json.loads(self.credentials_file)
+                creds = ServiceAccountCredentials.from_service_account_info(
+                    service_account_info, scopes=GOOGLE_SCOPES
+                )
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON in GOOGLE_CREDENTIALS environment variable: {e}")
+        else:
+            # It's a file path
+            logger.info(f"Loading Service Account from file: {self.credentials_file}")
+            if not os.path.exists(self.credentials_file):
+                raise FileNotFoundError(f"Service account key file not found: {self.credentials_file}")
 
-        creds = ServiceAccountCredentials.from_service_account_file(
-            self.credentials_file, scopes=GOOGLE_SCOPES
-        )
+            creds = ServiceAccountCredentials.from_service_account_file(
+                self.credentials_file, scopes=GOOGLE_SCOPES
+            )
 
         logger.info("✅ Service Account authentication successful")
         return gspread.authorize(creds)
