@@ -61,7 +61,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "raw_data_file": "data/temp/doctors_data.csv"
     },
     "mv_resolvers": {
-        "view_name": "MV Resolvers",
+        "view_name": "Applicants",  # MV Resolvers data is in the Applicants view
         "skill_filter": "gpt_mv_resolvers",
         "spreadsheet_id": os.getenv("MV_RESOLVERS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_mv_Raw.csv",
