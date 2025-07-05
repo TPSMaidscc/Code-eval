@@ -22,25 +22,38 @@ class GoogleSheetsService:
 
     def _get_gspread_client(self):
         """Get authenticated gspread client using Service Account."""
-        logger.info(f"Using Service Account authentication")
-        logger.info(f"Credentials source: {self.credentials_file[:50]}...")  # Log first 50 chars for debugging
+        logger.info(f"🔐 Using Service Account authentication")
+        logger.info(f"📋 Credentials source (first 50 chars): {self.credentials_file[:50]}...")
+        logger.info(f"🔍 Credentials type check - starts with '{{': {self.credentials_file.strip().startswith('{') if self.credentials_file else False}")
 
         # Check if credentials_file is a JSON string or file path
         if self.credentials_file and self.credentials_file.strip().startswith('{'):
             # It's a JSON string from environment variable
             logger.info("✅ Detected JSON string - Loading Service Account from environment variable")
             try:
-                service_account_info = json.loads(self.credentials_file)
+                # Clean up any potential JSON formatting issues
+                cleaned_json = self.credentials_file.strip()
+                # Fix common JSON syntax errors (semicolons instead of colons)
+                cleaned_json = cleaned_json.replace('";:', '":').replace("';:", "':")
+
+                logger.info(f"🧹 Cleaned JSON (first 100 chars): {cleaned_json[:100]}...")
+                service_account_info = json.loads(cleaned_json)
                 logger.info(f"✅ JSON parsed successfully - Project ID: {service_account_info.get('project_id', 'unknown')}")
+                logger.info(f"📧 Service Account Email: {service_account_info.get('client_email', 'unknown')}")
+
                 creds = ServiceAccountCredentials.from_service_account_info(
                     service_account_info, scopes=GOOGLE_SCOPES
                 )
             except json.JSONDecodeError as e:
                 logger.error(f"❌ Invalid JSON in credentials: {e}")
+                logger.error(f"🔍 JSON content (first 200 chars): {self.credentials_file[:200]}...")
                 raise ValueError(f"Invalid JSON in Service Account credentials: {e}")
+            except Exception as e:
+                logger.error(f"❌ Error creating credentials from JSON: {e}")
+                raise
         else:
             # It's a file path
-            logger.info(f"✅ Detected file path - Loading Service Account from file: {self.credentials_file}")
+            logger.info(f"📁 Detected file path - Loading Service Account from file: {self.credentials_file}")
             if not os.path.exists(self.credentials_file):
                 logger.error(f"❌ Service account file not found: {self.credentials_file}")
                 raise FileNotFoundError(f"Service account key file not found: {self.credentials_file}")
