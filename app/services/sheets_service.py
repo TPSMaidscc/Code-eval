@@ -128,8 +128,11 @@ def get_sheets_service() -> GoogleSheetsService:
     Returns:
         GoogleSheetsService instance
     """
-    logger.info("Using Service Account authentication")
-    if os.path.exists(SERVICE_ACCOUNT_FILE):
+    logger.info("🔧 Getting Google Sheets service")
+    logger.info(f"📋 SERVICE_ACCOUNT_FILE (first 50 chars): {SERVICE_ACCOUNT_FILE[:50]}...")
+
+    # SERVICE_ACCOUNT_FILE can be either a JSON string or file path
+    if SERVICE_ACCOUNT_FILE:
         return GoogleSheetsService(SERVICE_ACCOUNT_FILE)
     else:
-        raise FileNotFoundError(f"Service account file not found: {SERVICE_ACCOUNT_FILE}")
+        raise ValueError("No Service Account credentials found. Set GOOGLE_CREDENTIALS environment variable.")
