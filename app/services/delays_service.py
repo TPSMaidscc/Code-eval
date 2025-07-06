@@ -25,7 +25,7 @@ class DelaysAnalysisService:
         logger.info(f"Starting first response calculation with skill filter: {skill_filter}")
 
         # Convert to datetime (same as your working code)
-        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'], infer_datetime_format=True)
         response_times = []
 
         for conv_id, group in df.groupby("Conversation ID"):
@@ -95,7 +95,7 @@ class DelaysAnalysisService:
     def calculate_subsequent_response_times(self, df: pd.DataFrame, skill_filter: str = None) -> pd.DataFrame:
         """Calculate Non initial Response times (excluding first response)."""
         # Convert to datetime (same as your working code)
-        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'], infer_datetime_format=True)
         response_times = []
 
         for conv_id, group in df.groupby("Conversation ID"):
