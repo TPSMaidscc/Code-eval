@@ -4,6 +4,7 @@ Repetitions analysis service
 
 import pandas as pd
 import logging
+import os
 from typing import Tuple, List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
@@ -247,9 +248,123 @@ class RepetitionsAnalysisService:
                 repetitions=repetitions,
                 summary=summary
             )
-            
+
             return result
-            
+
         except Exception as e:
-            logger.error(f"Error analyzing {department}: {e}")
+            logger.error(f"Analysis failed for {department}: {str(e)}")
             raise RuntimeError(f"Analysis failed for {department}: {str(e)}")
+
+    async def analyze_department_with_data(self, department: str, df: pd.DataFrame,
+                                         analysis_date: str, upload_to_sheets: bool = True) -> AnalysisResult:
+        """
+        Analyze repetitions for a department using pre-loaded data.
+
+        This method is optimized for combined analysis where data is already fetched.
+
+        Args:
+            department: Department name
+            df: Pre-loaded DataFrame with conversation data
+            analysis_date: Date of analysis (YYYY-MM-DD format)
+            upload_to_sheets: Whether to upload results to Google Sheets
+
+        Returns:
+            AnalysisResult with analysis results
+        """
+        logger.info(f"Starting repetitions analysis for {department} with pre-loaded data")
+
+        try:
+            # Get department configuration
+            config = DEPARTMENT_CONFIG[department]
+            skill_filter = config['skill_filter']
+
+            logger.info(f"Processing {len(df)} rows for {department} with skill filter: {skill_filter}")
+
+            # Preprocess the data
+            preprocessed_df = self.preprocess_data(df, department)
+
+            # Get repetitions analysis
+            repetition_data, percentage, chats_with_reps, total_chats = self.get_repetitions(preprocessed_df, department)
+
+            if not repetition_data:
+                logger.warning(f"No repetitions found for {department} with skill {skill_filter}")
+                # Create empty summary
+                summary = AnalysisSummary(
+                    message=f'NO REPETITIONS FOUND for {skill_filter}',
+                    percentage_with_repetitions="0.00%",
+                    total_chats=total_chats,
+                    chats_with_repetitions=0
+                )
+                # Return AnalysisResult object for consistency
+                return AnalysisResult(
+                    department=department,
+                    analysis_date=analysis_date,
+                    total_conversations=total_chats,
+                    conversations_with_repetitions=0,
+                    repetition_percentage=0.0,
+                    repetitions=[],
+                    summary=summary
+                )
+
+            # Save results to file
+            output_file = self.save_results(repetition_data, department, percentage, chats_with_reps, total_chats)
+
+            logger.info(f"Repetitions results saved to {output_file}")
+
+            # Upload to Google Sheets if requested
+            if upload_to_sheets:
+                try:
+                    from .sheets_service import get_sheets_service
+                    sheets_service = get_sheets_service()
+
+                    spreadsheet_id = config.get('spreadsheet_id')
+                    if spreadsheet_id:
+                        sheet_name = f"Repetitions {analysis_date}"
+                        success = sheets_service.upload_csv_to_sheet(
+                            spreadsheet_id, output_file, sheet_name
+                        )
+                        if success:
+                            logger.info(f"Successfully uploaded repetitions results for {department}")
+                        else:
+                            logger.warning(f"Failed to upload repetitions results for {department}")
+                    else:
+                        logger.warning(f"No spreadsheet ID configured for {department}")
+
+                except Exception as e:
+                    logger.error(f"Failed to upload repetitions data to Google Sheets: {e}")
+
+            # Convert repetition_data to RepetitionRecord objects
+            repetitions = []
+            for record in repetition_data:
+                repetitions.append(RepetitionRecord(
+                    conversation_id=str(record.get('conversation_id', '')),
+                    message_id=str(record.get('message_id', '')),
+                    message=str(record.get('message', '')),
+                    repetition_count=int(record.get('repetition_count', 0)),
+                    skill=record.get('skill', None)
+                ))
+
+            # Create summary object
+            summary = AnalysisSummary(
+                message='TOTAL REPETITIONS' if repetitions else 'NO REPETITIONS FOUND',
+                percentage_with_repetitions=f"{percentage:.2f}%",
+                total_chats=total_chats,
+                chats_with_repetitions=chats_with_reps
+            )
+
+            result = AnalysisResult(
+                department=department,
+                analysis_date=analysis_date,
+                total_conversations=total_chats,
+                conversations_with_repetitions=chats_with_reps,
+                repetition_percentage=round(percentage, 2),
+                repetitions=repetitions,
+                summary=summary
+            )
+
+            logger.info(f"Repetitions analysis completed successfully for {department}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Repetitions analysis failed for {department}: {str(e)}")
+            raise RuntimeError(f"Repetitions analysis failed for {department}: {str(e)}")

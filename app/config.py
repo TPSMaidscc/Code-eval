@@ -46,7 +46,7 @@ TABLEAU_CONFIG = {
 DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "applicants": {
         "view_name": "Applicants",
-        "skill_filter": "FILIPINA_OUTSIDE",
+        "skill_filter": "GPT_MAIDSAT_FILIPINA_OUTSIDE",
         "spreadsheet_id": os.getenv("APPLICANTS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_applicants.csv",
         "cleaned_file": "data/temp/Applicants_cleaned_repetitions.csv",
@@ -61,7 +61,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "raw_data_file": "data/temp/doctors_data.csv"
     },
     "mv_resolvers": {
-        "view_name": "MVDepartment",  # MV Resolvers data is in the Applicants view
+        "view_name": "MV Department",  # MV Resolvers data is in the Applicants view
         "skill_filter": "gpt_mv_resolvers",
         "spreadsheet_id": os.getenv("MV_RESOLVERS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_mv_Raw.csv",
@@ -76,6 +76,14 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "cleaned_file": "data/temp/CC_Sale_cleaned_repetitions.csv",
         "raw_data_file": "data/temp/cc_sales_data.csv"
     }
+}
+
+# Summary Spreadsheet IDs for combined analysis results
+SUMMARY_SPREADSHEET_IDS = {
+    "applicants": "1E5wHZKSDXQZlHIb3sV4ZWqIxvboLduzUEU0eupK7tys",
+    "doctors": "1STHimb0IJ077iuBtTOwsa-GD8jStjU3SiBW7yBWom-E",
+    "cc_sales": "1te1fbAXhURIUO0EzQ2Mrorv3a6GDtEVM_5np9TO775o",
+    "mv_resolvers": "1XkVcHlkh8fEp7mmBD1Zkavdp2blBLwSABT1dE_sOf74"
 }
 
 # Google Sheets Configuration
@@ -138,6 +146,7 @@ def validate_required_env_vars():
         "DOCTORS_SPREADSHEET_ID",
         "MV_RESOLVERS_SPREADSHEET_ID",
         "CC_SALES_SPREADSHEET_ID"
+        # Delays spreadsheet IDs are optional
     ]
 
     missing_vars = []
