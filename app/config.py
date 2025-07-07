@@ -70,7 +70,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     },
     "cc_sales": {
         "view_name": "Sales CC",
-        "skill_filter": "GPT_CC_PROSPECT",
+        "skill_filter": ['GPT_CC_PROSPECT'],
         "spreadsheet_id": os.getenv("CC_SALES_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_CC_Sale.csv",
         "cleaned_file": "data/temp/CC_Sale_cleaned_repetitions.csv",
