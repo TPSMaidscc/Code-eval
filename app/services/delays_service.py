@@ -53,6 +53,14 @@ class DelaysAnalysisService:
                     time_diff = (current_row["Message Sent Time"] - first_consumer_message_time).total_seconds()
                     time_diff = round(time_diff, 2)
 
+                    if time_diff < 0:
+                        logger.warning(f"Negative first response time {time_diff} for conversation {conv_id}, message {current_row.get('MESSAGE_ID', 'N/A')} - skipping")
+                    if time_diff < 0:
+                                #logging negative response times
+                                logging.info(f"Negative response time detected for conversation {conv_id} by {sender_name}: {time_diff} seconds")
+                                logging.info(f"First consumer message time is {first_consumer_message_time} seconds")
+                                logging.info(f"Message ID is {current_row.get('MESSAGE_ID', '')}")    
+
                     if sender == "bot":
                         sender_name = "BOT" + "_" + skill
                     elif sender == "agent":
@@ -84,7 +92,9 @@ class DelaysAnalysisService:
 
     def calculate_subsequent_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate Non initial Response times (excluding first response)."""
-        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
+        logger.info(f"Starting subsequent response calculation with skill filters: {keywords}")
+
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'], infer_datetime_format=True)
         response_times = []
 
         for conv_id, group in df.groupby("Conversation ID"):
@@ -111,14 +121,21 @@ class DelaysAnalysisService:
                     first_consumer_message_time = current_row['Message Sent Time']
 
                 elif sender in ["bot", "agent", "system"] and first_consumer_message_time is not None:
+                    # Skip the first response (we only want subsequent responses)
                     if not first_response_recorded:
                         first_response_recorded = True
-                        first_consumer_message_time = None
+                        # Don't reset first_consumer_message_time here - keep it for subsequent responses
                         continue
 
+                    # Calculate response time for subsequent responses
                     time_diff = (current_row["Message Sent Time"] - first_consumer_message_time).total_seconds()
                     time_diff = round(time_diff, 2)
-
+                    if time_diff < 0:
+                                #logging negative response times
+                                logging.info(f"Negative response time detected for conversation {conv_id} by {sender_name}: {time_diff} seconds")
+                                logging.info(f"First consumer message time is {first_consumer_message_time} seconds")
+                                logging.info(f"Message ID is {current_row.get('MESSAGE_ID', '')}")
+                    # Determine sender name
                     if sender == "bot":
                         sender_name = "BOT" + "_" + skill
                     elif sender == "agent":
@@ -126,6 +143,7 @@ class DelaysAnalysisService:
                     else:
                         sender_name = "System"
 
+                    # Only record bot responses (filter out agent/system responses)
                     if str(sender_name).lower().find("bot") != -1:
                         response_times.append({
                             "Conversation Id": conv_id,
@@ -135,31 +153,64 @@ class DelaysAnalysisService:
                             "Skill": skill,
                             "Message Sent Time": current_row["Message Sent Time"]
                         })
+                        # Reset for next consumer message
                         first_consumer_message_time = None
 
         result_df = pd.DataFrame(response_times)
+
+        # Apply skill filter if provided (using keywords logic from your working code)
         if keywords:
-            result_df['Sender'] = result_df['Sender'].astype(str)
+            result_df['Sender'] = result_df['Sender'].astype(str)  # Ensure all values are strings
             mask = result_df['Sender'].str.contains('|'.join(keywords), case=False, na=False)
             result_df = result_df[mask]
+
         if not result_df.empty:
             result_df = result_df.sort_values(by='Response Time (secs)', ascending=False)
+
+        logger.info(f"Final subsequent response DataFrame shape: {result_df.shape}")
         return result_df
 
-    def preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def preprocess_data(self, df: pd.DataFrame, department: str = None) -> pd.DataFrame:
         """Preprocess data for delays analysis."""
         # Sort by conversation ID and message sent time
         df = df.sort_values(by=['Conversation ID', 'Message Sent Time'])
-        
+
+        # Count before dropping duplicates
+        original_count = len(df)
+
         # Drop duplicates
         df = df.drop_duplicates(subset=['Conversation ID', 'Message Sent Time'], keep='first')
-        
+
+        # Count after dropping duplicates
+        duplicates_removed = original_count - len(df)
+        logger.info(f"Removed {duplicates_removed} duplicate records from {original_count} total records")
+
+        # Save cleaned data to CSV if department is provided
+        if department:
+            try:
+                from app.config import DEPARTMENT_CONFIG
+                config = DEPARTMENT_CONFIG.get(department, {})
+                cleaned_file = config.get('cleaned_file')
+
+                if cleaned_file:
+                    # Modify the filename for delays analysis
+                    delays_cleaned_file = cleaned_file.replace('_cleaned_repetitions.csv', '_delays_cleaned.csv')
+                    df.to_csv(delays_cleaned_file, index=False)
+                    logger.info(f"Saved cleaned delays data to {delays_cleaned_file}")
+                else:
+                    # Fallback filename
+                    delays_cleaned_file = f"data/temp/{department}_delays_cleaned.csv"
+                    df.to_csv(delays_cleaned_file, index=False)
+                    logger.info(f"Saved cleaned delays data to {delays_cleaned_file}")
+            except Exception as e:
+                logger.warning(f"Failed to save cleaned delays data: {e}")
+
         # Ensure required columns exist
         required_columns = ['Conversation ID', 'Message Sent Time', 'Sent By', 'Message Type']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             raise ValueError(f"Missing required columns: {missing_columns}")
-        
+
         return df
 
     def save_delays_results(self, first_response_df: pd.DataFrame, subsequent_response_df: pd.DataFrame,
@@ -320,7 +371,7 @@ class DelaysAnalysisService:
                     "message": "No data rows found for the specified date"
                 }
             
-            df = self.preprocess_data(df)
+            df = self.preprocess_data(df, department)
             
             # Calculate response times
             skill_filter = config.get('skill_filter')
@@ -392,6 +443,9 @@ class DelaysAnalysisService:
             skill_filter = config['skill_filter']
 
             logger.info(f"Processing {len(df)} rows for {department} delays with skill filters: {skill_filter}")
+
+            # Preprocess the data (drop duplicates and save cleaned data)
+            df = self.preprocess_data(df, department)
 
             # Calculate response times
             first_response_df = self.calculate_first_response_times(df, skill_filter)
