@@ -22,7 +22,7 @@ class DelaysAnalysisService:
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
-        logger.info(f"Starting first response calculation with keywords: {keywords}")
+        logger.info(f"Starting first response calculation with skill filters: {keywords}")
 
         df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
         response_times = []
@@ -324,7 +324,7 @@ class DelaysAnalysisService:
             
             # Calculate response times
             skill_filter = config.get('skill_filter')
-            logger.info(f"Calculating response times with skill filter: {skill_filter}")
+            logger.info(f"Calculating response times with skill filters: {skill_filter}")
             
             first_response_df = self.calculate_first_response_times(df, skill_filter)
             subsequent_response_df = self.calculate_subsequent_response_times(df, skill_filter)
@@ -391,7 +391,7 @@ class DelaysAnalysisService:
             config = DEPARTMENT_CONFIG[department]
             skill_filter = config['skill_filter']
 
-            logger.info(f"Processing {len(df)} rows for {department} delays with skill filter: {skill_filter}")
+            logger.info(f"Processing {len(df)} rows for {department} delays with skill filters: {skill_filter}")
 
             # Calculate response times
             first_response_df = self.calculate_first_response_times(df, skill_filter)

@@ -54,15 +54,22 @@ class RepetitionsAnalysisService:
             
             # Filter bot messages based on department
             if config['skill_filter']:
+                skill_filters = config['skill_filter']
+                if isinstance(skill_filters, str):
+                    # Handle backward compatibility with single string
+                    skill_filters = [skill_filters]
+
+                # Create a pattern that matches any of the skill filters
+                skill_pattern = '|'.join(skill_filters)
                 bot_messages = conversation_df[
-                    (conversation_df['Sent By'].str.lower() == 'bot') & 
+                    (conversation_df['Sent By'].str.lower() == 'bot') &
                     (conversation_df['Message Type'].str.lower() == 'normal message') &
-                    (conversation_df['Skill'].str.contains(config['skill_filter'], na=False, case=False))
+                    (conversation_df['Skill'].str.contains(skill_pattern, na=False, case=False))
                 ]
             else:
                 # CC Sales - all bot messages
                 bot_messages = conversation_df[
-                    (conversation_df['Sent By'].str.lower() == 'bot') & 
+                    (conversation_df['Sent By'].str.lower() == 'bot') &
                     (conversation_df['Message Type'].str.lower() == 'normal message')
                 ]
             
@@ -95,7 +102,14 @@ class RepetitionsAnalysisService:
         for conversation_id in df['Conversation ID'].unique():
             conversation_df = df[df['Conversation ID'] == conversation_id]
             if config['skill_filter']:
-                if conversation_df['Skill'].str.contains(config['skill_filter'], case=False, na=False).any():
+                skill_filters = config['skill_filter']
+                if isinstance(skill_filters, str):
+                    # Handle backward compatibility with single string
+                    skill_filters = [skill_filters]
+
+                # Create a pattern that matches any of the skill filters
+                skill_pattern = '|'.join(skill_filters)
+                if conversation_df['Skill'].str.contains(skill_pattern, case=False, na=False).any():
                     total_chats += 1
             else:
                 # CC Sales - count all conversations
@@ -278,7 +292,7 @@ class RepetitionsAnalysisService:
             config = DEPARTMENT_CONFIG[department]
             skill_filter = config['skill_filter']
 
-            logger.info(f"Processing {len(df)} rows for {department} with skill filter: {skill_filter}")
+            logger.info(f"Processing {len(df)} rows for {department} with skill filters: {skill_filter}")
 
             # Preprocess the data
             preprocessed_df = self.preprocess_data(df, department)
@@ -287,10 +301,11 @@ class RepetitionsAnalysisService:
             repetition_data, percentage, chats_with_reps, total_chats = self.get_repetitions(preprocessed_df, department)
 
             if not repetition_data:
-                logger.warning(f"No repetitions found for {department} with skill {skill_filter}")
+                logger.warning(f"No repetitions found for {department} with skill filters {skill_filter}")
                 # Create empty summary
+                skill_filter_str = ', '.join(skill_filter) if isinstance(skill_filter, list) else str(skill_filter)
                 summary = AnalysisSummary(
-                    message=f'NO REPETITIONS FOUND for {skill_filter}',
+                    message=f'NO REPETITIONS FOUND for {skill_filter_str}',
                     percentage_with_repetitions="0.00%",
                     total_chats=total_chats,
                     chats_with_repetitions=0
