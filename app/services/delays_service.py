@@ -20,38 +20,32 @@ class DelaysAnalysisService:
     def __init__(self):
         self.tableau_service = TableauService()
     
-    def calculate_first_response_times(self, df: pd.DataFrame, skill_filter: str = None) -> pd.DataFrame:
+    def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
-        logger.info(f"Starting first response calculation with skill filter: {skill_filter}")
+        logger.info(f"Starting first response calculation with keywords: {keywords}")
 
-        # Convert to datetime (same as your working code)
-        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'], infer_datetime_format=True)
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
         response_times = []
 
         for conv_id, group in df.groupby("Conversation ID"):
-            # Filter relevant message types (exactly like your working code)
             group = group[
                 (group['Message Type'].str.lower().isin(['normal message', 'transfer'])) |
                 ((group['Message Type'].str.lower() == 'private message') & (group['Sent By'].str.lower() == 'system'))
             ].copy()
-
             first_consumer_message_time = None
-            first_response_recorded = False  # Flag to track if first response is recorded
-
+            first_response_recorded = False
             for i in range(len(group)):
                 current_row = group.iloc[i]
                 sender = str(current_row["Sent By"]).strip().lower()
-                message_type = str(current_row["Message Type"]).strip().lower()  # Get message type
+                message_type = str(current_row["Message Type"]).strip().lower()
                 skill = str(current_row["Skill"]).strip().lower()
 
                 if sender == "consumer" and first_consumer_message_time is None:
                     first_consumer_message_time = current_row["Message Sent Time"]
 
-                # Check for "Transfer" message before the first response
                 elif message_type == "transfer" and first_consumer_message_time is not None:
-                    first_consumer_message_time = current_row["Message Sent Time"]  # Update consumer message time
+                    first_consumer_message_time = current_row["Message Sent Time"]
 
-                # Case c: System private message resets consumer time
                 elif sender == "system" and message_type == 'private message' and first_consumer_message_time is not None:
                     first_consumer_message_time = current_row['Message Sent Time']
 
@@ -75,38 +69,31 @@ class DelaysAnalysisService:
                             "Skill": skill,
                             "Message Sent Time": current_row["Message Sent Time"]
                         })
-                        first_response_recorded = True  # Set the flag to True once the first response is recorded
+                        first_response_recorded = True
                         break
 
         result_df = pd.DataFrame(response_times)
-
-        # Apply skill filter if provided (using keywords logic from your working code)
-        if skill_filter and not result_df.empty:
-            result_df['Sender'] = result_df['Sender'].astype(str)  # Ensure all values are strings
-            mask = result_df['Sender'].str.contains(skill_filter, case=False, na=False)
+        if keywords:
+            result_df['Sender'] = result_df['Sender'].astype(str)
+            mask = result_df['Sender'].str.contains('|'.join(keywords), case=False, na=False)
             result_df = result_df[mask]
-
         if not result_df.empty:
             result_df = result_df.sort_values(by='Response Time (secs)', ascending=False)
-
         logger.info(f"Final result DataFrame shape: {result_df.shape}")
         return result_df
 
-    def calculate_subsequent_response_times(self, df: pd.DataFrame, skill_filter: str = None) -> pd.DataFrame:
+    def calculate_subsequent_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate Non initial Response times (excluding first response)."""
-        # Convert to datetime (same as your working code)
-        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'], infer_datetime_format=True)
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
         response_times = []
 
         for conv_id, group in df.groupby("Conversation ID"):
-            # Filter relevant message types (exactly like your working code)
             group = group[
                 (group['Message Type'].str.lower().isin(['normal message', 'transfer'])) |
                 ((group['Message Type'].str.lower() == 'private message') & (group['Sent By'].str.lower() == 'system'))
             ].copy()
-
             first_consumer_message_time = None
-            first_response_recorded = False  # Flag to track if first response is recorded
+            first_response_recorded = False
 
             for i in range(len(group)):
                 current_row = group.iloc[i]
@@ -114,22 +101,20 @@ class DelaysAnalysisService:
                 message_type = str(current_row["Message Type"]).strip().lower()
                 skill = str(current_row["Skill"]).strip().lower()
 
-                if sender == "consumer" and first_consumer_message_time is None:  # Only update if it's the first in a sequence
+                if sender == "consumer" and first_consumer_message_time is None:
                     first_consumer_message_time = current_row["Message Sent Time"]
 
-                # Check for "Transfer" message before the first response
                 elif message_type == "transfer" and first_consumer_message_time is not None:
-                    first_consumer_message_time = current_row["Message Sent Time"]  # Update consumer message time when transfers happens
+                    first_consumer_message_time = current_row["Message Sent Time"]
 
-                # Case c: System private message resets consumer time
                 elif sender == "system" and message_type == 'private message' and first_consumer_message_time is not None:
                     first_consumer_message_time = current_row['Message Sent Time']
 
                 elif sender in ["bot", "agent", "system"] and first_consumer_message_time is not None:
                     if not first_response_recorded:
-                        first_response_recorded = True  # Skip the first response
+                        first_response_recorded = True
                         first_consumer_message_time = None
-                        continue  # Move to the next message
+                        continue
 
                     time_diff = (current_row["Message Sent Time"] - first_consumer_message_time).total_seconds()
                     time_diff = round(time_diff, 2)
@@ -153,16 +138,12 @@ class DelaysAnalysisService:
                         first_consumer_message_time = None
 
         result_df = pd.DataFrame(response_times)
-
-        # Apply skill filter if provided (using keywords logic from your working code)
-        if skill_filter and not result_df.empty:
-            result_df['Sender'] = result_df['Sender'].astype(str)  # Ensure all values are strings
-            mask = result_df['Sender'].str.contains(skill_filter, case=False, na=False)
+        if keywords:
+            result_df['Sender'] = result_df['Sender'].astype(str)
+            mask = result_df['Sender'].str.contains('|'.join(keywords), case=False, na=False)
             result_df = result_df[mask]
-
         if not result_df.empty:
             result_df = result_df.sort_values(by='Response Time (secs)', ascending=False)
-
         return result_df
 
     def preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
