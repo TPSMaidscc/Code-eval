@@ -46,7 +46,7 @@ TABLEAU_CONFIG = {
 DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "applicants": {
         "view_name": "Applicants",
-        "skill_filter": "GPT_MAIDSAT_FILIPINA_OUTSIDE",
+        "skill_filter": ['gpt_filipina_outside', "GPT_MAIDSAT_FILIPINA_OUTSIDE","Filipina_Outside_Pending_Facephoto","Filipina_Outside_Pending_Passport","Filipina_Outside_Pending_Ticket","Filipina_Outside_Ticket_Booked"],
         "spreadsheet_id": os.getenv("APPLICANTS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_applicants.csv",
         "cleaned_file": "data/temp/Applicants_cleaned_repetitions.csv",
