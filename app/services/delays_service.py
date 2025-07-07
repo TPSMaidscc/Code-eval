@@ -173,6 +173,7 @@ class DelaysAnalysisService:
     def preprocess_data(self, df: pd.DataFrame, department: str = None) -> pd.DataFrame:
         """Preprocess data for delays analysis."""
         # Sort by conversation ID and message sent time
+        df["Message Sent Time"] = pd.to_datetime(df["Message Sent Time"])
         df = df.sort_values(by=['Conversation ID', 'Message Sent Time'])
 
         # Count before dropping duplicates
