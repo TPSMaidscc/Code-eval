@@ -47,6 +47,35 @@ class DelaysAnalysisService:
         time_formatted = f"{minutes:02d}:{seconds:02d}"
 
         return f"{time_formatted} ({over_4_min} msg > 4 Min)"
+
+    def calculate_agent_percentage(self, department: str, df: pd.DataFrame) -> float:
+        """
+        Calculate the percentage of agent intervention.
+
+        Args:
+            department: Department name
+            df: DataFrame with message data from Tableau
+
+        Returns:
+            Percentage of agent messages vs total (bot + agent) messages
+        """
+        logger.info(f"Calculating agent percentage for {department}")
+
+        # Keep only rows with Message Type == "Normal Message"
+        df_filtered = df[df["Message Type"].str.lower() == "normal message"].copy()
+
+        # Count number of rows with Sent By == "Bot" and Sent By == "Agent"
+        bot_count = (df_filtered["Sent By"].str.lower() == "bot").sum()
+        agent_count = (df_filtered["Sent By"].str.lower() == "agent").sum()
+
+        total = bot_count + agent_count
+        percent = (agent_count / total * 100) if total > 0 else 0.0
+
+        logger.info(f"Bot messages: {bot_count}")
+        logger.info(f"Agent messages: {agent_count}")
+        logger.info(f"Agent intervention percentage: {percent:.2f}%")
+
+        return round(percent, 2)
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
@@ -488,8 +517,17 @@ class DelaysAnalysisService:
                 first_response_df, subsequent_response_df, department, analysis_date
             )
 
+            # Calculate agent intervention percentage
+            agent_percentage = self.calculate_agent_percentage(department, df)
+
             # Generate summary statistics (same as working individual delays method)
             summary = self.calculate_summary_stats(first_response_df, subsequent_response_df)
+
+            # Add agent percentage to summary
+            summary["agent_intervention"] = {
+                "percentage": agent_percentage,
+                "formatted": f"{agent_percentage:.2f}%"
+            }
 
             # Upload to Google Sheets if requested
             if upload_to_sheets:
