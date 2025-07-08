@@ -119,9 +119,16 @@ class DelaysAnalysisService:
             message = row["TEXT"]
             skill = row["Skill"]
 
-            # Check marking condition
-            if last_skill is None and skill.startswith(tuple(target_skills)):
-                marking = True
+            # Check marking condition using flexible case-insensitive contains matching
+            skill_lower = str(skill).lower()
+            target_skills_lower = [str(ts).lower() for ts in target_skills]
+
+            if last_skill is None:
+                # Check if any target skill is contained in current skill (case-insensitive)
+                for target_skill_lower in target_skills_lower:
+                    if target_skill_lower in skill_lower or skill_lower in target_skill_lower:
+                        marking = True
+                        break
             elif marking and (len(skill) > skill_name_length_limit):
                 marking = False
 
@@ -158,11 +165,30 @@ class DelaysAnalysisService:
 
         # Track conversations that contain target skills
         target_skill_conversations = set()
-        for conv_id, conv_data in df.groupby("Conversation ID"):
-            if any(skill in conv_data["Skill"].values for skill in target_skills):
-                target_skill_conversations.add(conv_id)
 
-        logger.info(f"Found {len(target_skill_conversations)} conversations with target skills")
+        # Debug: Log unique skills in the data
+        unique_skills = df["Skill"].unique()
+        logger.info(f"Unique skills in data: {list(unique_skills)[:10]}...")  # Show first 10
+        logger.info(f"Total unique skills: {len(unique_skills)}")
+
+        # Use flexible case-insensitive contains matching
+        target_skills_lower = [str(skill).lower() for skill in target_skills]
+        logger.info(f"Target skills (lowercase): {target_skills_lower}")
+
+        for conv_id, conv_data in df.groupby("Conversation ID"):
+            conv_skills = [str(skill).lower() for skill in conv_data["Skill"].values]
+
+            # Check if any target skill is contained in any conversation skill (case-insensitive)
+            for target_skill_lower in target_skills_lower:
+                for conv_skill_lower in conv_skills:
+                    if target_skill_lower in conv_skill_lower or conv_skill_lower in target_skill_lower:
+                        target_skill_conversations.add(conv_id)
+                        logger.debug(f"Match found: '{target_skill_lower}' matches '{conv_skill_lower}' in conversation {conv_id}")
+                        break
+                if conv_id in target_skill_conversations:
+                    break
+
+        logger.info(f"Found {len(target_skill_conversations)} conversations with target skills using flexible matching")
 
         all_segments = []
         customer_name_map = df.groupby("Conversation ID")["Customer Name"].first().to_dict()
