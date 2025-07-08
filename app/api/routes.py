@@ -354,7 +354,7 @@ async def analyze_combined(
         # Get repetition percentage - format as "count (percentage%)"
         chats_with_reps = repetitions_result.conversations_with_repetitions
         repetition_percentage = repetitions_result.repetition_percentage
-        summary_data['repetition_percentage'] = f"{chats_with_reps} ({repetition_percentage:.2f}%)"
+        summary_data['repetition_percentage'] = f" {repetition_percentage:.2f}%({chats_with_reps})"
 
         # Get delays analysis summary
         delays_summary = delays_result.get("summary", {})
