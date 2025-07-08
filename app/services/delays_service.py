@@ -59,23 +59,50 @@ class DelaysAnalysisService:
         Returns:
             Percentage of agent messages vs total (bot + agent) messages
         """
-        logger.info(f"Calculating agent percentage for {department}")
+        try:
+            logger.info(f"Calculating agent percentage for {department}")
+            logger.info(f"Input DataFrame shape: {df.shape}")
+            logger.info(f"DataFrame columns: {list(df.columns)}")
 
-        # Keep only rows with Message Type == "Normal Message"
-        df_filtered = df[df["Message Type"].str.lower() == "normal message"].copy()
+            # Check if required columns exist
+            if "Message Type" not in df.columns:
+                logger.error(f"Missing 'Message Type' column in DataFrame")
+                return 0.0
 
-        # Count number of rows with Sent By == "Bot" and Sent By == "Agent"
-        bot_count = (df_filtered["Sent By"].str.lower() == "bot").sum()
-        agent_count = (df_filtered["Sent By"].str.lower() == "agent").sum()
+            if "Sent By" not in df.columns:
+                logger.error(f"Missing 'Sent By' column in DataFrame")
+                return 0.0
 
-        total = bot_count + agent_count
-        percent = (agent_count / total * 100) if total > 0 else 0.0
+            # Keep only rows with Message Type == "Normal Message"
+            df_filtered = df[df["Message Type"].str.lower() == "normal message"].copy()
+            logger.info(f"After filtering for 'normal message': {len(df_filtered)} rows")
 
-        logger.info(f"Bot messages: {bot_count}")
-        logger.info(f"Agent messages: {agent_count}")
-        logger.info(f"Agent intervention percentage: {percent:.2f}%")
+            if len(df_filtered) == 0:
+                logger.warning(f"No 'normal message' rows found for {department}")
+                return 0.0
 
-        return round(percent, 2)
+            # Count number of rows with Sent By == "Bot" and Sent By == "Agent"
+            bot_count = (df_filtered["Sent By"].str.lower() == "bot").sum()
+            agent_count = (df_filtered["Sent By"].str.lower() == "agent").sum()
+
+            total = bot_count + agent_count
+            percent = (agent_count / total * 100) if total > 0 else 0.0
+
+            logger.info(f"Bot messages: {bot_count}")
+            logger.info(f"Agent messages: {agent_count}")
+            logger.info(f"Total bot+agent messages: {total}")
+            logger.info(f"Agent intervention percentage: {percent:.2f}%")
+
+            # Log unique values in Sent By column for debugging
+            unique_senders = df_filtered["Sent By"].str.lower().unique()
+            logger.info(f"Unique senders in filtered data: {list(unique_senders)}")
+
+            return round(percent, 2)
+
+        except Exception as e:
+            logger.error(f"Error calculating agent percentage for {department}: {e}")
+            logger.error(f"Exception details: {str(e)}")
+            return 0.0
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
@@ -518,7 +545,12 @@ class DelaysAnalysisService:
             )
 
             # Calculate agent intervention percentage
-            agent_percentage = self.calculate_agent_percentage(department, df)
+            try:
+                agent_percentage = self.calculate_agent_percentage(department, df)
+                logger.info(f"Agent percentage calculated successfully: {agent_percentage}%")
+            except Exception as e:
+                logger.error(f"Failed to calculate agent percentage: {e}")
+                agent_percentage = 0.0
 
             # Generate summary statistics (same as working individual delays method)
             summary = self.calculate_summary_stats(first_response_df, subsequent_response_df)
