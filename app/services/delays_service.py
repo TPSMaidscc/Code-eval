@@ -587,7 +587,7 @@ class DelaysAnalysisService:
             logger.info(f"Non initial Response calculations: {len(subsequent_response_df)} rows")
             
             try:
-                agent_percentage = self.calculate_agent_intervention_percentage(department, df)
+                agent_percentage = self.calculate_agent_intervention_percentage(department, df.copy())
                 logger.info(f"Agent percentage calculated successfully: {agent_percentage}%")
             except Exception as e:
                 logger.error(f"Failed to calculate agent percentage: {e}")
@@ -595,7 +595,7 @@ class DelaysAnalysisService:
 
             # Calculate handling percentage
             try:
-                handling_percentage = self.calculate_handling_percentage(department, df)
+                handling_percentage = self.calculate_handling_percentage(department, df.copy())
                 logger.info(f"Handling percentage calculated successfully: {handling_percentage}%")
             except Exception as e:
                 logger.error(f"Failed to calculate handling percentage: {e}")
