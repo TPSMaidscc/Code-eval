@@ -163,7 +163,7 @@ class GoogleSheetsService:
                 ["Metric Name", "Values"],  # Header row
                 ["META Quality", ""],
                 ["LLM Model used", ""],
-                ["Reason for using the model", ""]
+                ["Reason for using the model", ""],
                 ["Cost", ""],
                 ["7-day CVR %", ""],
                 ["Total Number of Chats", summary_data.get('total_conversations', '')],
