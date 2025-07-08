@@ -75,6 +75,14 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "output_file": "data/output/repetitions_CC_Sale.csv",
         "cleaned_file": "data/temp/CC_Sale_cleaned_repetitions.csv",
         "raw_data_file": "data/temp/cc_sales_data.csv"
+    },
+     "cc_resolvers": {
+        "view_name": "CC Department",
+        "skill_filter": ['GPT_CC_RESOLVERS'],
+        "spreadsheet_id": os.getenv("CC_RESOLVERS_SPREADSHEET_ID"),
+        "output_file": "data/output/repetitions_CC_Resolvers.csv",
+        "cleaned_file": "data/temp/CC_Resolvers_cleaned_repetitions.csv",
+        "raw_data_file": "data/temp/CC_Resolvers_data.csv"
     }
 }
 
@@ -83,7 +91,8 @@ SUMMARY_SPREADSHEET_IDS = {
     "applicants": "1E5wHZKSDXQZlHIb3sV4ZWqIxvboLduzUEU0eupK7tys",
     "doctors": "1STHimb0IJ077iuBtTOwsa-GD8jStjU3SiBW7yBWom-E",
     "cc_sales": "1te1fbAXhURIUO0EzQ2Mrorv3a6GDtEVM_5np9TO775o",
-    "mv_resolvers": "1XkVcHlkh8fEp7mmBD1Zkavdp2blBLwSABT1dE_sOf74"
+    "mv_resolvers": "1XkVcHlkh8fEp7mmBD1Zkavdp2blBLwSABT1dE_sOf74",
+    "cc_resolvers": "1QdmaTc5F2VUJ0Yu0kNF9d6ETnkMOlOgi18P7XlBSyHg"
 }
 
 # Google Sheets Configuration
