@@ -48,7 +48,7 @@ class DelaysAnalysisService:
 
         return f"{time_formatted} ({over_4_min} msg > 4 Min)"
 
-    def calculate_agent_percentage(self, department: str, df: pd.DataFrame) -> float:
+    def calculate_agent_intervention_percentage(self, department: str, df: pd.DataFrame) -> float:
         """
         Calculate the percentage of agent intervention.
 
@@ -468,6 +468,12 @@ class DelaysAnalysisService:
             logger.info(f"First response calculations: {len(first_response_df)} rows")
             logger.info(f"Non initial Response calculations: {len(subsequent_response_df)} rows")
             
+            try:
+                agent_percentage = self.calculate_agent_intervention_percentage(department, df)
+                logger.info(f"Agent percentage calculated successfully: {agent_percentage}%")
+            except Exception as e:
+                logger.error(f"Failed to calculate agent percentage: {e}")
+                agent_percentage = 0.0
             # Save results
             first_file, subsequent_file = self.save_delays_results(
                 first_response_df, subsequent_response_df, department, analysis_date
@@ -475,7 +481,10 @@ class DelaysAnalysisService:
             
             # Calculate summary statistics
             summary = self.calculate_summary_stats(first_response_df, subsequent_response_df)
-            
+            summary["agent_intervention"] = {
+                "percentage": agent_percentage,
+                "formatted": f"{agent_percentage:.2f}%"
+            }
             # Upload to Google Sheets if requested
             if upload_to_sheets:
                 await self.upload_to_delays_sheets(
@@ -546,7 +555,7 @@ class DelaysAnalysisService:
 
             # Calculate agent intervention percentage
             try:
-                agent_percentage = self.calculate_agent_percentage(department, df)
+                agent_percentage = self.calculate_agent_intervention_percentage(department, df)
                 logger.info(f"Agent percentage calculated successfully: {agent_percentage}%")
             except Exception as e:
                 logger.error(f"Failed to calculate agent percentage: {e}")
