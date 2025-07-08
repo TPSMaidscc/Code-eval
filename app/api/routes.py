@@ -55,12 +55,21 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     try:
+        # Check if agent percentage function exists (version check)
+        try:
+            from app.services.delays_service import DelaysService
+            delays_service_instance = DelaysService()
+            has_agent_percentage = hasattr(delays_service_instance, 'calculate_agent_percentage')
+        except:
+            has_agent_percentage = False
+
         # Basic health checks
         dependencies = {
             "tableau_service": "healthy",
             "sheets_service": "healthy",
             "analysis_service": "healthy",
-            "environment": os.getenv("ENVIRONMENT", "development")
+            "environment": os.getenv("ENVIRONMENT", "development"),
+            "agent_percentage_feature": "available" if has_agent_percentage else "missing"
         }
 
         return HealthResponse(
