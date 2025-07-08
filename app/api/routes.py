@@ -368,6 +368,10 @@ async def analyze_combined(
         agent_intervention = delays_summary.get("agent_intervention", {})
         summary_data['agent_intervention_percentage'] = agent_intervention.get('formatted', agent_intervention.get('percentage', ''))
 
+        # Get handling percentage
+        handling = delays_summary.get("handling", {})
+        summary_data['handling_percentage'] = handling.get('formatted', handling.get('percentage', ''))
+
         # Upload to summary sheet if requested
         if upload_to_sheets:
             try:

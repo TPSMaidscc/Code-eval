@@ -103,6 +103,177 @@ class DelaysAnalysisService:
             logger.error(f"Error calculating agent percentage for {department}: {e}")
             logger.error(f"Exception details: {str(e)}")
             return 0.0
+
+    def segment_conversation(self, conv_data, target_skills):
+        """Segments a single conversation into parts based on agent or bot changes and marks messages with [IDENTIFIER] if conditions met."""
+        segments = []
+        current_segment = []
+        current_agent = None
+        first_agent_or_bot_encountered = False
+        last_skill = None
+        marking = False
+        skill_name_length_limit = 23
+
+        for index, row in conv_data.iterrows():
+            sender = str(row["Sent By"]).strip().lower()
+            message = row["TEXT"]
+            skill = row["Skill"]
+
+            # Check marking condition
+            if last_skill is None and skill.startswith(tuple(target_skills)):
+                marking = True
+            elif marking and (len(skill) > skill_name_length_limit):
+                marking = False
+
+            # Identify if it's from agent or bot
+            if sender in ["agent", "bot"]:
+                if not first_agent_or_bot_encountered:
+                    current_agent = row["Agent Name "] if sender == "agent" else "BOT"
+                    first_agent_or_bot_encountered = True
+                else:
+                    next_agent = row["Agent Name "] if sender == "agent" else "BOT"
+                    if next_agent != current_agent:
+                        if current_segment:
+                            segments.append((current_agent, last_skill, current_segment))
+                            current_segment = []
+                        current_agent = next_agent
+
+                last_skill = skill  # Always update skill on agent/bot message
+
+            # Add [IDENTIFIER] if marking is True and sender is agent or bot
+            if marking and sender in ["agent", "bot"]:
+                current_segment.append(f"[IDENTIFIER] {sender.capitalize()}: {message}")
+            else:
+                current_segment.append(f"{sender.capitalize()}: {message}")
+
+        # Add final segment
+        if current_segment:
+            segments.append((current_agent, last_skill, current_segment))
+
+        return segments
+
+    def process_conversations(self, df, target_skills):
+        """Process conversations and segment them, aggregating by Conversation ID."""
+
+        # Preprocess data (drop duplicates)
+        df = self.preprocess_data(df)
+
+        # Track conversations that contain target skills
+        target_skill_conversations = set()
+        for conv_id, conv_data in df.groupby("Conversation ID"):
+            if any(skill in conv_data["Skill"].values for skill in target_skills):
+                target_skill_conversations.add(conv_id)
+
+        logger.info(f"Found {len(target_skill_conversations)} conversations with target skills")
+
+        all_segments = []
+        customer_name_map = df.groupby("Conversation ID")["Customer Name"].first().to_dict()
+
+        for conv_id, conv_data in df.groupby("Conversation ID"):
+            if conv_id not in target_skill_conversations:
+                continue
+            conv_data = conv_data[conv_data["Message Type"] == "Normal Message"]
+            segments = self.segment_conversation(conv_data, target_skills)
+            customer_name = customer_name_map.get(conv_id, "")
+            for agent, last_skill, segment_messages in segments:
+                all_segments.append([
+                    conv_id,
+                    customer_name,
+                    last_skill,
+                    agent,
+                    "\n".join(segment_messages)
+                ])
+
+        segmented_df = pd.DataFrame(
+            all_segments,
+            columns=["Conversation ID", "Customer Name", "Last Skill", "Agent Name", "Messages"]
+        )
+
+        # Filter: keep only segments that include consumer messages
+        segmented_df = segmented_df[segmented_df["Messages"].str.contains("Consumer:", na=False)]
+
+        # Keep only conversations that used target skills
+        segmented_df = segmented_df[segmented_df["Conversation ID"].isin(target_skill_conversations)]
+
+        # Aggregate by Conversation ID (not Customer Name)
+        agg_functions = {
+            'Customer Name': 'first',
+            'Last Skill': 'first',
+            'Agent Name': lambda x: ', '.join(x.astype(str).unique()),
+            'Messages': lambda x: '\n\n--- CONVERSATION SEPARATOR ---\n\n'.join(x.astype(str))
+        }
+
+        merged_df = segmented_df.groupby('Conversation ID').agg(agg_functions).reset_index()
+        merged_df['Conversation ID'] = merged_df['Conversation ID'].astype(str)
+
+        return merged_df
+
+    def calculate_handling_percentage(self, department: str, df: pd.DataFrame) -> float:
+        """
+        Calculate the percentage of handling (bot-only conversations vs all conversations).
+
+        Args:
+            department: Department name
+            df: DataFrame with message data from Tableau
+
+        Returns:
+            Percentage of conversations handled by bot only
+        """
+        try:
+            logger.info(f"Calculating handling percentage for {department}")
+
+            # Get target skills for the department
+            from app.config import DEPARTMENT_CONFIG
+            config = DEPARTMENT_CONFIG.get(department, {})
+            target_skills = config.get('skill_filter', [])
+
+            if isinstance(target_skills, str):
+                target_skills = [target_skills]
+
+            logger.info(f"Target skills for {department}: {target_skills}")
+
+            # Process conversations using the segmentation logic
+            segmented_df = self.process_conversations(df, target_skills)
+            logger.info(f"Segmented DataFrame shape: {segmented_df.shape}")
+
+            if segmented_df.empty:
+                logger.warning(f"No segmented conversations found for {department}")
+                return 0.0
+
+            # Step 3: Remove conversations where messages start with "Agent:"
+            not_agent_start = ~segmented_df["Messages"].str.lstrip().str.startswith("Agent:")
+
+            # Step 4: Keep only conversations that contain "Bot:"
+            contains_bot = segmented_df["Messages"].str.contains("Bot:", na=False)
+
+            # Apply both filters
+            filtered_df = segmented_df[not_agent_start & contains_bot]
+            logger.info(f"Filtered DataFrame shape: {filtered_df.shape}")
+
+            # Percent handling calculation
+            all_chats = len(filtered_df)
+
+            if all_chats == 0:
+                logger.warning(f"No valid conversations found for handling calculation in {department}")
+                return 0.0
+
+            bot_only_chats = filtered_df[
+                filtered_df["Messages"].str.contains("Bot:", na=False) &
+                ~filtered_df["Messages"].str.contains("Agent:", na=False)
+            ]
+            num_bot_only = len(bot_only_chats)
+            percent_handling = (num_bot_only / all_chats) * 100 if all_chats > 0 else 0
+
+            logger.info(f"All chats: {all_chats}")
+            logger.info(f"Bot-only chats: {num_bot_only}")
+            logger.info(f"Handling percentage: {percent_handling:.2f}%")
+
+            return round(percent_handling, 2)
+
+        except Exception as e:
+            logger.error(f"Error calculating handling percentage for {department}: {e}")
+            logger.error(f"Exception details: {str(e)}")
+            return 0.0
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
@@ -474,6 +645,14 @@ class DelaysAnalysisService:
             except Exception as e:
                 logger.error(f"Failed to calculate agent percentage: {e}")
                 agent_percentage = 0.0
+
+            # Calculate handling percentage
+            try:
+                handling_percentage = self.calculate_handling_percentage(department, df)
+                logger.info(f"Handling percentage calculated successfully: {handling_percentage}%")
+            except Exception as e:
+                logger.error(f"Failed to calculate handling percentage: {e}")
+                handling_percentage = 0.0
             # Save results
             first_file, subsequent_file = self.save_delays_results(
                 first_response_df, subsequent_response_df, department, analysis_date
@@ -484,6 +663,10 @@ class DelaysAnalysisService:
             summary["agent_intervention"] = {
                 "percentage": agent_percentage,
                 "formatted": f"{agent_percentage:.2f}%"
+            }
+            summary["handling"] = {
+                "percentage": handling_percentage,
+                "formatted": f"{handling_percentage:.2f}%"
             }
             # Upload to Google Sheets if requested
             if upload_to_sheets:
@@ -561,13 +744,26 @@ class DelaysAnalysisService:
                 logger.error(f"Failed to calculate agent percentage: {e}")
                 agent_percentage = 0.0
 
+            # Calculate handling percentage
+            try:
+                handling_percentage = self.calculate_handling_percentage(department, df)
+                logger.info(f"Handling percentage calculated successfully: {handling_percentage}%")
+            except Exception as e:
+                logger.error(f"Failed to calculate handling percentage: {e}")
+                handling_percentage = 0.0
+
             # Generate summary statistics (same as working individual delays method)
             summary = self.calculate_summary_stats(first_response_df, subsequent_response_df)
 
-            # Add agent percentage to summary
+            # Add agent percentage and handling percentage to summary
             summary["agent_intervention"] = {
                 "percentage": agent_percentage,
                 "formatted": f"{agent_percentage:.2f}%"
+            }
+
+            summary["handling"] = {
+                "percentage": handling_percentage,
+                "formatted": f"{handling_percentage:.2f}%"
             }
 
             # Upload to Google Sheets if requested
