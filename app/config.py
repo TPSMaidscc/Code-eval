@@ -91,7 +91,15 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "output_file": "data/output/repetitions_Delighters.csv",
         "cleaned_file": "data/temp/Delighters_cleaned_repetitions.csv",
         "raw_data_file": "data/temp/Delighters_data.csv"
-    }
+    },
+        "mv_sales": {
+        "view_name": "Sales MV",
+        "skill_filter": ['GPT_MV_PROSPECT'],
+        "spreadsheet_id": os.getenv("MV_SALES_SPREADSHEET_ID"),
+        "output_file": "data/output/repetitions_MV_Sale.csv",
+        "cleaned_file": "data/temp/MV_Sale_cleaned_repetitions.csv",
+        "raw_data_file": "data/temp/MV_sales_data.csv"
+    },
     
 }
 
@@ -103,6 +111,7 @@ SUMMARY_SPREADSHEET_IDS = {
     "mv_resolvers": "1XkVcHlkh8fEp7mmBD1Zkavdp2blBLwSABT1dE_sOf74",
     "cc_resolvers": "1QdmaTc5F2VUJ0Yu0kNF9d6ETnkMOlOgi18P7XlBSyHg",
     "delighters": "1PV0ZmobUYKHGZvHC7IfJ1t6HrJMTFi6YRbpISCouIfQ",
+    "mv_sales": "1agrl9hlBhemXkiojuWKbqiMHKUzxGgos4JSkXxw7NAk"
 }
 
 # Google Sheets Configuration
