@@ -526,6 +526,8 @@ class DelaysAnalysisService:
         # Create a copy to avoid modifying the original
         df_with_avg = df.copy()
 
+        # drop all row with Response Time (secs) more than four minutes
+        df_with_avg = df_with_avg[df_with_avg['Response Time (secs)'] <= 240]
         # Calculate averages
         avg_response_time = df['Response Time (secs)'].mean()
 
@@ -557,7 +559,6 @@ class DelaysAnalysisService:
         result_df = pd.concat([df_with_avg, avg_df], ignore_index=True)
 
         return result_df
-
     async def analyze_department_delays(self, department: str,df: pd.DataFrame, upload_to_sheets: bool = True, 
                                       date_override: Optional[str] = None) -> Dict[str, Any]:
         """
