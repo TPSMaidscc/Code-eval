@@ -168,7 +168,7 @@ class GoogleSheetsService:
                 ["7-day CVR %", ""],
                 ["Total Number of Chats", summary_data.get('total_conversations', '')],
                 ["Handling %", ""],
-                ["Agent intervention %", ""],
+                ["Agent intervention %", summary_data.get('agent_intervention_percentage', '')],
                 ["Repetition %", summary_data.get('repetition_percentage', '')],
                 ["Avg Delay - Initial msg", summary_data.get('avg_delay_initial', '')],
                 ["Avg Delay - non-initial msg", summary_data.get('avg_delay_subsequent', '')],

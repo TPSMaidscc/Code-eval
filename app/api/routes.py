@@ -355,6 +355,10 @@ async def analyze_combined(
         summary_data['avg_delay_initial'] = first_response.get('avg_response_time_formatted', first_response.get('avg_response_time', ''))
         summary_data['avg_delay_subsequent'] = subsequent_response.get('avg_response_time_formatted', subsequent_response.get('avg_response_time', ''))
 
+        # Get agent intervention percentage
+        agent_intervention = delays_summary.get("agent_intervention", {})
+        summary_data['agent_intervention_percentage'] = agent_intervention.get('formatted', agent_intervention.get('percentage', ''))
+
         # Upload to summary sheet if requested
         if upload_to_sheets:
             try:
