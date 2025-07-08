@@ -187,7 +187,7 @@ class GoogleSheetsService:
             ]
 
             # Upload the data to the worksheet
-            ws.update('A1:B23', metrics_headers)
+            ws.update('A1:B24', metrics_headers)
             logger.info(f"Summary data uploaded successfully to '{sheet_name}'")
 
             return True
