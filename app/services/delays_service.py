@@ -16,9 +16,37 @@ logger = logging.getLogger(__name__)
 
 class DelaysAnalysisService:
     """Service for analyzing bot response times and delays."""
-    
+
     def __init__(self):
         self.tableau_service = TableauService()
+
+    def format_response_time_with_count(self, response_times_list):
+        """
+        Format response times as MM:SS with count of messages > 4 minutes.
+
+        Args:
+            response_times_list: List of response times in seconds
+
+        Returns:
+            String in format "MM:SS (X msg > 4 Min)" where MM:SS is average time
+        """
+        if not response_times_list:
+            return "00:00 (0 msg > 4 Min)"
+
+        # Calculate average response time
+        avg_seconds = sum(response_times_list) / len(response_times_list)
+
+        # Convert to minutes and seconds
+        minutes = int(avg_seconds // 60)
+        seconds = int(avg_seconds % 60)
+
+        # Count messages over 4 minutes (240 seconds)
+        over_4_min = sum(1 for time in response_times_list if time > 240)
+
+        # Format as MM:SS
+        time_formatted = f"{minutes:02d}:{seconds:02d}"
+
+        return f"{time_formatted} ({over_4_min} msg > 4 Min)"
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
@@ -516,15 +544,19 @@ class DelaysAnalysisService:
             max_time = response_times.max()
             min_time = response_times.min()
 
+            # Format response time as MM:SS with count over 4 minutes
+            formatted_time = self.format_response_time_with_count(response_times.tolist())
+
             summary["first_response"] = {
                 "count": len(first_response_df),
                 "avg_response_time": round(float(avg_time), 2) if not pd.isna(avg_time) else 0.0,
+                "avg_response_time_formatted": formatted_time,
                 "median_response_time": round(float(median_time), 2) if not pd.isna(median_time) else 0.0,
                 "max_response_time": round(float(max_time), 2) if not pd.isna(max_time) else 0.0,
                 "min_response_time": round(float(min_time), 2) if not pd.isna(min_time) else 0.0
             }
         else:
-            summary["first_response"] = {"count": 0, "message": "No first responses found"}
+            summary["first_response"] = {"count": 0, "message": "No first responses found", "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"}
         
         if not subsequent_response_df.empty:
             response_times = subsequent_response_df['Response Time (secs)']
@@ -533,15 +565,19 @@ class DelaysAnalysisService:
             max_time = response_times.max()
             min_time = response_times.min()
 
+            # Format response time as MM:SS with count over 4 minutes
+            formatted_time = self.format_response_time_with_count(response_times.tolist())
+
             summary["subsequent_response"] = {
                 "count": len(subsequent_response_df),
                 "avg_response_time": round(float(avg_time), 2) if not pd.isna(avg_time) else 0.0,
+                "avg_response_time_formatted": formatted_time,
                 "median_response_time": round(float(median_time), 2) if not pd.isna(median_time) else 0.0,
                 "max_response_time": round(float(max_time), 2) if not pd.isna(max_time) else 0.0,
                 "min_response_time": round(float(min_time), 2) if not pd.isna(min_time) else 0.0
             }
         else:
-            summary["subsequent_response"] = {"count": 0, "message": "No Non initial Responses found"}
+            summary["subsequent_response"] = {"count": 0, "message": "No Non initial Responses found", "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"}
         
         return summary
 

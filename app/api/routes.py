@@ -351,8 +351,9 @@ async def analyze_combined(
         first_response = delays_summary.get("first_response", {})
         subsequent_response = delays_summary.get("subsequent_response", {})
 
-        summary_data['avg_delay_initial'] = first_response.get('avg_response_time', '')
-        summary_data['avg_delay_subsequent'] = subsequent_response.get('avg_response_time', '')
+        # Use formatted response times (MM:SS with count over 4 min)
+        summary_data['avg_delay_initial'] = first_response.get('avg_response_time_formatted', first_response.get('avg_response_time', ''))
+        summary_data['avg_delay_subsequent'] = subsequent_response.get('avg_response_time_formatted', subsequent_response.get('avg_response_time', ''))
 
         # Upload to summary sheet if requested
         if upload_to_sheets:
