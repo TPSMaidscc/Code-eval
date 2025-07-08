@@ -25,6 +25,7 @@ class RepetitionsAnalysisService:
         """Preprocess conversation data."""
         logger.info(f"Preprocessing data for {department}")
         
+        df['Message Sent Time'] = pd.to_datetime(df['Message Sent Time'])
         # Sort by conversation id and message sent time
         df = df.sort_values(by=['Conversation ID', 'Message Sent Time'])
         

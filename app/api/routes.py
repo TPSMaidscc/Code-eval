@@ -335,6 +335,7 @@ async def analyze_combined(
         logger.info(f"Running delays analysis for {department}")
         delays_result = await delays_service.analyze_department_delays(
             department=department,
+            df=df.copy(),  
             upload_to_sheets=upload_to_sheets,
             date_override=analysis_date
         )

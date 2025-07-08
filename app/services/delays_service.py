@@ -534,7 +534,7 @@ class DelaysAnalysisService:
 
         return result_df
 
-    async def analyze_department_delays(self, department: str, upload_to_sheets: bool = True, 
+    async def analyze_department_delays(self, department: str,df: pd.DataFrame, upload_to_sheets: bool = True, 
                                       date_override: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze response time delays for a specific department.
@@ -565,58 +565,7 @@ class DelaysAnalysisService:
                 start_date = end_date = yesterday.strftime("%Y-%m-%d")
                 analysis_date = start_date
             
-            # Use the same raw data file as repetitions analysis
-            raw_data_file = config['raw_data_file']
-            
-            # Fetch data
-            logger.info(f"Fetching data from Tableau view: {config['view_name']}")
-            logger.info(f"Date range: {start_date} to {end_date}")
-            logger.info(f"Output file: {raw_data_file}")
-
-            if not self.tableau_service.fetch_data(config['view_name'], raw_data_file,
-                                                 start_date, end_date):
-                raise RuntimeError(f"Failed to fetch data from Tableau for {department}")
-
-            # Check if file exists and has content
-            if not os.path.exists(raw_data_file):
-                raise RuntimeError(f"Tableau data file not created: {raw_data_file}")
-
-            file_size = os.path.getsize(raw_data_file)
-            logger.info(f"Downloaded file size: {file_size} bytes")
-
-            if file_size == 0:
-                logger.warning(f"Empty file downloaded from Tableau for {department}")
-                return {
-                    "department": department,
-                    "analysis_date": analysis_date,
-                    "status": "NO_DATA",
-                    "message": "Empty file downloaded from Tableau - no data for the specified date"
-                }
-
-            # Try to read the first few lines to check format
-            try:
-                with open(raw_data_file, 'r', encoding='utf-8') as f:
-                    first_lines = [f.readline().strip() for _ in range(3)]
-                logger.info(f"First few lines of CSV: {first_lines}")
-            except Exception as e:
-                logger.warning(f"Could not read CSV file preview: {e}")
-
-            # Load and preprocess data
-            try:
-                df = pd.read_csv(raw_data_file)
-                logger.info(f"Successfully loaded CSV with shape: {df.shape}")
-                logger.info(f"Columns: {list(df.columns)}")
-            except pd.errors.EmptyDataError:
-                logger.warning(f"CSV file is empty or has no columns for {department}")
-                return {
-                    "department": department,
-                    "analysis_date": analysis_date,
-                    "status": "NO_DATA",
-                    "message": "CSV file is empty or has no columns"
-                }
-            except Exception as e:
-                logger.error(f"Error reading CSV file: {e}")
-                raise RuntimeError(f"Error reading CSV file for {department}: {e}")
+  
 
             if df.empty:
                 logger.warning(f"No data rows found for {department} on {analysis_date}")
