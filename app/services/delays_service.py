@@ -155,8 +155,6 @@ class DelaysAnalysisService:
     def process_conversations(self, df, target_skills):
         """Process conversations and segment them, aggregating by Conversation ID."""
 
-        # Preprocess data (drop duplicates)
-        df = self.preprocess_data(df)
 
         # Track conversations that contain target skills
         target_skill_conversations = set()
