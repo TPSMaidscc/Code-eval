@@ -403,6 +403,7 @@ class DelaysAnalysisService:
                     # Skip the first response (we only want subsequent responses)
                     if not first_response_recorded:
                         first_response_recorded = True
+                        first_consumer_message_time = None
                         # Don't reset first_consumer_message_time here - keep it for subsequent responses
                         continue
 
@@ -788,16 +789,31 @@ class DelaysAnalysisService:
         
         if not first_response_df.empty:
             response_times = first_response_df['Response Time (secs)']
-            avg_time = response_times.mean()
-            median_time = response_times.median()
-            max_time = response_times.max()
-            min_time = response_times.min()
 
-            # Format response time as MM:SS with count over 4 minutes
+            # Filter for responses < 4 minutes (240 seconds) for average calculation
+            response_times_under_4min = response_times[response_times < 240]
+
+            # Calculate stats using filtered data (< 4 minutes only)
+            if not response_times_under_4min.empty:
+                avg_time = response_times_under_4min.mean()
+                median_time = response_times_under_4min.median()
+                min_time = response_times_under_4min.min()
+            else:
+                avg_time = median_time = min_time = 0.0
+
+            # Max time uses all data (for reference)
+            max_time = response_times.max()
+
+            # Count responses >= 4 minutes
+            count_4plus = len(response_times[response_times >= 240])
+
+            # Format response time as MM:SS with count over 4 minutes (uses all data)
             formatted_time = self.format_response_time_with_count(response_times.tolist())
 
             summary["first_response"] = {
                 "count": len(first_response_df),
+                "count_under_4min": len(response_times_under_4min),
+                "count_4plus": count_4plus,
                 "avg_response_time": round(float(avg_time), 2) if not pd.isna(avg_time) else 0.0,
                 "avg_response_time_formatted": formatted_time,
                 "median_response_time": round(float(median_time), 2) if not pd.isna(median_time) else 0.0,
@@ -805,20 +821,41 @@ class DelaysAnalysisService:
                 "min_response_time": round(float(min_time), 2) if not pd.isna(min_time) else 0.0
             }
         else:
-            summary["first_response"] = {"count": 0, "message": "No first responses found", "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"}
-        
+            summary["first_response"] = {
+                "count": 0,
+                "count_under_4min": 0,
+                "count_4plus": 0,
+                "message": "No first responses found",
+                "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"
+            }
+
         if not subsequent_response_df.empty:
             response_times = subsequent_response_df['Response Time (secs)']
-            avg_time = response_times.mean()
-            median_time = response_times.median()
-            max_time = response_times.max()
-            min_time = response_times.min()
 
-            # Format response time as MM:SS with count over 4 minutes
+            # Filter for responses < 4 minutes (240 seconds) for average calculation
+            response_times_under_4min = response_times[response_times < 240]
+
+            # Calculate stats using filtered data (< 4 minutes only)
+            if not response_times_under_4min.empty:
+                avg_time = response_times_under_4min.mean()
+                median_time = response_times_under_4min.median()
+                min_time = response_times_under_4min.min()
+            else:
+                avg_time = median_time = min_time = 0.0
+
+            # Max time uses all data (for reference)
+            max_time = response_times.max()
+
+            # Count responses >= 4 minutes
+            count_4plus = len(response_times[response_times >= 240])
+
+            # Format response time as MM:SS with count over 4 minutes (uses all data)
             formatted_time = self.format_response_time_with_count(response_times.tolist())
 
             summary["subsequent_response"] = {
                 "count": len(subsequent_response_df),
+                "count_under_4min": len(response_times_under_4min),
+                "count_4plus": count_4plus,
                 "avg_response_time": round(float(avg_time), 2) if not pd.isna(avg_time) else 0.0,
                 "avg_response_time_formatted": formatted_time,
                 "median_response_time": round(float(median_time), 2) if not pd.isna(median_time) else 0.0,
@@ -826,7 +863,13 @@ class DelaysAnalysisService:
                 "min_response_time": round(float(min_time), 2) if not pd.isna(min_time) else 0.0
             }
         else:
-            summary["subsequent_response"] = {"count": 0, "message": "No Non initial Responses found", "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"}
+            summary["subsequent_response"] = {
+                "count": 0,
+                "count_under_4min": 0,
+                "count_4plus": 0,
+                "message": "No Non initial Responses found",
+                "avg_response_time_formatted": "00:00 (0 msg > 4 Min)"
+            }
         
         return summary
 
