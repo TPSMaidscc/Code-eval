@@ -44,7 +44,7 @@ TABLEAU_CONFIG = {
 
 # Department Configuration - Spreadsheet IDs moved to environment variables
 DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
-    "applicants": {
+    "philipina": {
         "view_name": "Applicants",
         "skill_filter": ['gpt_filipina_outside', "GPT_MAIDSAT_FILIPINA_OUTSIDE","Filipina_Outside_Pending_Facephoto","Filipina_Outside_Pending_Passport","Filipina_Outside_Pending_Ticket","Filipina_Outside_Ticket_Booked"],
         "spreadsheet_id": os.getenv("APPLICANTS_SPREADSHEET_ID"),
@@ -100,18 +100,36 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "cleaned_file": "data/temp/MV_Sale_cleaned_repetitions.csv",
         "raw_data_file": "data/temp/MV_sales_data.csv"
     },
+            "african": {
+        "view_name": "Applicants",
+        "skill_filter": ['MAIDSAT_AFRICAN_GPT', 'GPT_MAIDSAT_AFRICAN_KENYA','GPT_MAIDSAT_AFRICAN_OUTSIDE','GPT_MAIDSAT_AFRICAN_UAE'],
+        "spreadsheet_id": os.getenv("AFRICAN_SPREADSHEET_ID"),
+        "output_file": "data/output/repetitions_African.csv",
+        "cleaned_file": "data/temp/African_cleaned_repetitions.csv",
+        "raw_data_file": "data/temp/African_data.csv"
+    },
+                "ethiopian": {
+        "view_name": "Applicants",
+        "skill_filter": ['MAIDSAT_ETHIOPIAN_GPT', 'GPT_MAIDSAT_ETHIOPIA_ETHIOPIA','GPT_MAIDSAT_ETHIOPIA_OUTSIDE','GPT_MAIDSAT_ETHIOPIA_UAE','Ethiopian Assessment','Ethiopian Passed Question Assessment','Ethiopian Failed Question Assessment','Ethiopian Client Scenario','Ethiopian Sent video'],
+        "spreadsheet_id": os.getenv("ETHIOPIAN_SPREADSHEET_ID"),
+        "output_file": "data/output/repetitions_African.csv",
+        "cleaned_file": "data/temp/African_cleaned_repetitions.csv",
+        "raw_data_file": "data/temp/African_data.csv"
+    },
     
 }
 
 # Summary Spreadsheet IDs for combined analysis results
 SUMMARY_SPREADSHEET_IDS = {
-    "applicants": "1E5wHZKSDXQZlHIb3sV4ZWqIxvboLduzUEU0eupK7tys",
+    "philipina": "1E5wHZKSDXQZlHIb3sV4ZWqIxvboLduzUEU0eupK7tys",
     "doctors": "1STHimb0IJ077iuBtTOwsa-GD8jStjU3SiBW7yBWom-E",
     "cc_sales": "1te1fbAXhURIUO0EzQ2Mrorv3a6GDtEVM_5np9TO775o",
     "mv_resolvers": "1XkVcHlkh8fEp7mmBD1Zkavdp2blBLwSABT1dE_sOf74",
     "cc_resolvers": "1QdmaTc5F2VUJ0Yu0kNF9d6ETnkMOlOgi18P7XlBSyHg",
     "delighters": "1PV0ZmobUYKHGZvHC7IfJ1t6HrJMTFi6YRbpISCouIfQ",
-    "mv_sales": "1agrl9hlBhemXkiojuWKbqiMHKUzxGgos4JSkXxw7NAk"
+    "mv_sales": "1agrl9hlBhemXkiojuWKbqiMHKUzxGgos4JSkXxw7NAk",
+    "african":"1__KlrVjcpR8RoYfTYMYZ_EgddUSXMhK3bJO0fTGwDig",
+    "ethiopian":"1ENzdgiwUEtBSb5sHZJWs5aG8g2H62Low8doaDZf8s90"
 }
 
 # Google Sheets Configuration
