@@ -235,6 +235,7 @@ class DelaysAnalysisService:
     def calculate_handling_percentage(self, department: str, df: pd.DataFrame) -> float:
         """
         Calculate the percentage of handling (bot-only conversations vs all conversations).
+        Uses the same logic as get_bot_handle_metrics function.
 
         Args:
             department: Department name
@@ -256,43 +257,65 @@ class DelaysAnalysisService:
 
             logger.info(f"Target skills for {department}: {target_skills}")
 
-            # Process conversations using the segmentation logic
-            segmented_df = self.process_conversations(df, target_skills)
-            logger.info(f"Segmented DataFrame shape: {segmented_df.shape}")
+            # Find skill columns (case-insensitive)
+            skill_columns = [col for col in df.columns if 'skill' in col.lower()]
 
-            if segmented_df.empty:
-                logger.warning(f"No segmented conversations found for {department}")
+            if not skill_columns:
+                logger.warning("No skill columns found in the dataset")
                 return 0.0
 
-            # Step 3: Remove conversations where messages start with "Agent:"
-            not_agent_start = ~segmented_df["Messages"].str.lstrip().str.startswith("Agent:")
+            logger.info(f"Found skill columns: {skill_columns}")
 
-            # Step 4: Keep only conversations that contain "Bot:"
-            contains_bot = segmented_df["Messages"].str.contains("Bot:", na=False)
+            # Group by conversation ID
+            conversation_groups = df.groupby('Conversation ID')
 
-            # Apply both filters
-            filtered_df = segmented_df[not_agent_start & contains_bot]
-            logger.info(f"Filtered DataFrame shape: {filtered_df.shape}")
+            fully_bot_conversations = []
+            total_chats_with_skill = 0
 
-            # Percent handling calculation
-            all_chats = len(filtered_df)
+            for conversation_id, group in conversation_groups:
+                # Check if the conversation has any of the specified skills (flexible matching)
+                has_skill = False
+                for col in skill_columns:
+                    col_values = group[col].astype(str).str.lower()
+                    for target_skill in target_skills:
+                        target_skill_lower = str(target_skill).lower()
+                        # Use flexible contains matching
+                        if col_values.str.contains(target_skill_lower, na=False).any():
+                            has_skill = True
+                            break
+                    if has_skill:
+                        break
 
-            if all_chats == 0:
-                logger.warning(f"No valid conversations found for handling calculation in {department}")
-                return 0.0
+                if not has_skill:
+                    continue  # Skip conversations without the specified skill
 
-            bot_only_chats = filtered_df[
-                filtered_df["Messages"].str.contains("Bot:", na=False) &
-                ~filtered_df["Messages"].str.contains("Agent:", na=False)
-            ]
-            num_bot_only = len(bot_only_chats)
-            percent_handling = (num_bot_only / all_chats) * 100 if all_chats > 0 else 0
+                total_chats_with_skill += 1
 
-            logger.info(f"All chats: {all_chats}")
-            logger.info(f"Bot-only chats: {num_bot_only}")
-            logger.info(f"Handling percentage: {percent_handling:.2f}%")
+                # Check if there are any Agent interactions based on "Agent Name " column
+                has_agent_interaction = group['Agent Name '].notna().any()
 
-            return round(percent_handling, 2)
+                if has_agent_interaction:
+                    continue  # Skip conversations with Agent interaction
+
+                # Check if all messages are bot messages
+                # Bot messages are identified by having no Agent Name (isna)
+                all_bot_messages = group['Agent Name '].isna().all()
+
+                if not all_bot_messages:
+                    continue  # Skip if not all messages are bot messages
+
+                # If we reach here, it's a fully bot-handled conversation
+                fully_bot_conversations.append(conversation_id)
+
+            # Calculate bot handle ratio
+            total_chats = total_chats_with_skill  # Use skill-filtered total
+            bot_handle_ratio = (len(fully_bot_conversations) / total_chats) * 100 if total_chats > 0 else 0
+
+            logger.info(f"Total chats with target skills: {total_chats_with_skill}")
+            logger.info(f"Conversations handled fully by bot: {len(fully_bot_conversations)}")
+            logger.info(f"Bot Handle Ratio: {bot_handle_ratio:.2f}%")
+
+            return round(bot_handle_ratio, 2)
 
         except Exception as e:
             logger.error(f"Error calculating handling percentage for {department}: {e}")
