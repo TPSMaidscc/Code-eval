@@ -5,6 +5,7 @@ Tableau data fetching service
 import requests
 import urllib.parse
 import logging
+import xml.etree.ElementTree as ET
 from typing import Optional, Tuple
 from datetime import datetime, timedelta
 
@@ -21,6 +22,7 @@ class TableauService:
         self.token_name = TABLEAU_CONFIG["token_name"]
         self.token_value = TABLEAU_CONFIG["token_value"]
         self.site_content_url = TABLEAU_CONFIG["site_content_url"]
+        self.namespaces = {'t': 'http://onlinehelp.tableau.com/ts-api'}
         self.workbook_name = TABLEAU_CONFIG["workbook_name"]
     
     def sign_in(self) -> Tuple[str, str]:
@@ -217,6 +219,35 @@ class TableauService:
             if token:
                 self.sign_out(token)
 
+    def get_workbook_luid_by_name(self, token: str, site_luid: str, workbook_name: str) -> str:
+        """Get workbook LUID by name."""
+        try:
+            headers = {
+                'X-Tableau-Auth': token,
+                'Content-Type': 'application/xml'
+            }
+
+            url = f"{self.server_url}/api/{self.api_version}/sites/{site_luid}/workbooks"
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                root = ET.fromstring(response.content)
+                for workbook in root.findall('.//t:workbook', self.namespaces):
+                    if workbook.get('name') == workbook_name:
+                        workbook_luid = workbook.get('id')
+                        logger.info(f"Found workbook: {workbook_name} (ID: {workbook_luid})")
+                        return workbook_luid
+
+                logger.error(f"Workbook '{workbook_name}' not found")
+                return None
+            else:
+                logger.error(f"Failed to get workbooks: {response.status_code}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error getting workbook LUID for {workbook_name}: {e}")
+            return None
+
     def fetch_quality_data(self, output_file: str) -> bool:
         """
         Fetch quality rating data from the Quality view.
@@ -233,10 +264,10 @@ class TableauService:
             # Sign in to get token and site LUID
             token, site_luid = self.sign_in()
 
-            # Get workbook LUID
-            workbook_luid = self.get_workbook_luid(token, site_luid)
+            # Get workbook LUID for Quality Rating workbook
+            workbook_luid = self.get_workbook_luid_by_name(token, site_luid, "QualityRating")
             if not workbook_luid:
-                logger.error("Failed to get workbook LUID for quality data")
+                logger.error("Failed to get workbook LUID for QualityRating workbook")
                 return False
 
             # Get view LUID for Quality view
@@ -259,51 +290,3 @@ class TableauService:
             logger.error(f"Error fetching quality data: {e}")
             return False
 
-    def fetch_quality_data(self, output_file: str) -> bool:
-        """
-        Fetch quality rating data from the Quality view.
-
-        Args:
-            output_file: Path to save the CSV file
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            logger.info("Fetching quality data from Tableau")
-
-            # Sign in to get token and site LUID
-            token, site_luid = self.sign_in()
-
-            # Get workbook LUID
-            workbook_luid = self.get_workbook_luid(token, site_luid)
-            if not workbook_luid:
-                logger.error("Failed to get workbook LUID for quality data")
-                return False
-
-            # Get view LUID for Quality view
-            view_luid = self.get_view_luid(token, site_luid, workbook_luid, "Quality")
-            if not view_luid:
-                logger.error("Failed to get view LUID for Quality view")
-                return False
-
-            # Download the view data as CSV
-            success = self.download_view_csv(token, site_luid, view_luid, output_file)
-
-            if success:
-                logger.info(f"Successfully downloaded quality data to {output_file}")
-            else:
-                logger.error("Failed to download quality data")
-
-            return success
-
-        except Exception as e:
-            logger.error(f"Error fetching quality data: {e}")
-            return False
-            
-        except Exception as e:
-            logger.error(f"Failed to fetch data for view {view_name}: {e}")
-            return False
-        finally:
-            if token:
-                self.sign_out(token)
