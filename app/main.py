@@ -45,6 +45,7 @@ app = FastAPI(
 
 @app.get("/health")
 def health_check():
+    print("✅ /health was called")
     return {"status": "ok"}
 
 
