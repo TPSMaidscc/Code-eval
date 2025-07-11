@@ -47,6 +47,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "philipina": {
         "view_name": "Applicants",
         "skill_filter": ['gpt_filipina_outside', "GPT_MAIDSAT_FILIPINA_OUTSIDE","Filipina_Outside_Pending_Facephoto","Filipina_Outside_Pending_Passport","Filipina_Outside_Pending_Ticket","Filipina_Outside_Ticket_Booked"],
+        "phone_numbers": ["971507497417"],
         "spreadsheet_id": os.getenv("APPLICANTS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_applicants.csv",
         "cleaned_file": "data/temp/Applicants_cleaned_repetitions.csv",
@@ -55,6 +56,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "doctors": {
         "view_name": "Doctors",
         "skill_filter": ['GPT_Doctors'],
+        "phone_numbers": ["971501159784"],
         "spreadsheet_id": os.getenv("DOCTORS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_doctors.csv",
         "cleaned_file": "data/temp/Doctors_cleaned_repetitions.csv",
@@ -63,6 +65,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "mv_resolvers": {
         "view_name": "MV Department",  # MV Resolvers data is in the Applicants view
         "skill_filter": ['GPT_MV_RESOLVERS'],
+        "phone_numbers": ["971505741759"],
         "spreadsheet_id": os.getenv("MV_RESOLVERS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_mv_Raw.csv",
         "cleaned_file": "data/temp/MV_cleaned_repetitions.csv",
@@ -71,6 +74,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
     "cc_sales": {
         "view_name": "Sales CC",
         "skill_filter": ['GPT_CC_PROSPECT'],
+        "phone_numbers": ["97145810691", "97145810641"],
         "spreadsheet_id": os.getenv("CC_SALES_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_CC_Sale.csv",
         "cleaned_file": "data/temp/CC_Sale_cleaned_repetitions.csv",
@@ -79,6 +83,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
      "cc_resolvers": {
         "view_name": "CC Department",
         "skill_filter": ['GPT_CC_RESOLVERS'],
+        "phone_numbers": ["971505741759"],
         "spreadsheet_id": os.getenv("CC_RESOLVERS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_CC_Resolvers.csv",
         "cleaned_file": "data/temp/CC_Resolvers_cleaned_repetitions.csv",
@@ -87,6 +92,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
       "delighters": {
         "view_name": "Delighters",
         "skill_filter": ['GPT_Delighters'],
+        "phone_numbers": ["971506715943"],
         "spreadsheet_id": os.getenv("DELIGHTERS_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_Delighters.csv",
         "cleaned_file": "data/temp/Delighters_cleaned_repetitions.csv",
@@ -95,6 +101,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
         "mv_sales": {
         "view_name": "Sales MV",
         "skill_filter": ['GPT_MV_PROSPECT'],
+        "phone_numbers": ["97145810691", "97145810641"],
         "spreadsheet_id": os.getenv("MV_SALES_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_MV_Sale.csv",
         "cleaned_file": "data/temp/MV_Sale_cleaned_repetitions.csv",
@@ -103,6 +110,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
             "african": {
         "view_name": "Applicants",
         "skill_filter": ['MAIDSAT_AFRICAN_GPT', 'GPT_MAIDSAT_AFRICAN_KENYA','GPT_MAIDSAT_AFRICAN_OUTSIDE','GPT_MAIDSAT_AFRICAN_UAE'],
+        "phone_numbers": ["971502100827"],
         "spreadsheet_id": os.getenv("AFRICAN_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_African.csv",
         "cleaned_file": "data/temp/African_cleaned_repetitions.csv",
@@ -111,6 +119,7 @@ DEPARTMENT_CONFIG: Dict[str, Dict[str, Any]] = {
                 "ethiopian": {
         "view_name": "Applicants",
         "skill_filter": ['MAIDSAT_ETHIOPIAN_GPT', 'GPT_MAIDSAT_ETHIOPIA_ETHIOPIA','GPT_MAIDSAT_ETHIOPIA_OUTSIDE','GPT_MAIDSAT_ETHIOPIA_UAE','Ethiopian Assessment','Ethiopian Passed Question Assessment','Ethiopian Failed Question Assessment','Ethiopian Client Scenario','Ethiopian Sent video'],
+        "phone_numbers": ["97145810617"],
         "spreadsheet_id": os.getenv("ETHIOPIAN_SPREADSHEET_ID"),
         "output_file": "data/output/repetitions_African.csv",
         "cleaned_file": "data/temp/African_cleaned_repetitions.csv",

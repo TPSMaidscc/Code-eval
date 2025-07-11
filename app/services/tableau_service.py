@@ -209,6 +209,90 @@ class TableauService:
             
             logger.info(f"CSV successfully saved to {csv_output_path}")
             return True
+
+    def fetch_quality_data(self, output_file: str) -> bool:
+        """
+        Fetch quality rating data from the Quality view.
+
+        Args:
+            output_file: Path to save the CSV file
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            logger.info("Fetching quality data from Tableau")
+
+            # Sign in to get token and site LUID
+            token, site_luid = self.sign_in()
+
+            # Get workbook LUID
+            workbook_luid = self.get_workbook_luid(token, site_luid)
+            if not workbook_luid:
+                logger.error("Failed to get workbook LUID for quality data")
+                return False
+
+            # Get view LUID for Quality view
+            view_luid = self.get_view_luid(token, site_luid, workbook_luid, "Quality")
+            if not view_luid:
+                logger.error("Failed to get view LUID for Quality view")
+                return False
+
+            # Download the view data as CSV
+            success = self.download_view_csv(token, site_luid, view_luid, output_file)
+
+            if success:
+                logger.info(f"Successfully downloaded quality data to {output_file}")
+            else:
+                logger.error("Failed to download quality data")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error fetching quality data: {e}")
+            return False
+
+    def fetch_quality_data(self, output_file: str) -> bool:
+        """
+        Fetch quality rating data from the Quality view.
+
+        Args:
+            output_file: Path to save the CSV file
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            logger.info("Fetching quality data from Tableau")
+
+            # Sign in to get token and site LUID
+            token, site_luid = self.sign_in()
+
+            # Get workbook LUID
+            workbook_luid = self.get_workbook_luid(token, site_luid)
+            if not workbook_luid:
+                logger.error("Failed to get workbook LUID for quality data")
+                return False
+
+            # Get view LUID for Quality view
+            view_luid = self.get_view_luid(token, site_luid, workbook_luid, "Quality")
+            if not view_luid:
+                logger.error("Failed to get view LUID for Quality view")
+                return False
+
+            # Download the view data as CSV
+            success = self.download_view_csv(token, site_luid, view_luid, output_file)
+
+            if success:
+                logger.info(f"Successfully downloaded quality data to {output_file}")
+            else:
+                logger.error("Failed to download quality data")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error fetching quality data: {e}")
+            return False
             
         except Exception as e:
             logger.error(f"Failed to fetch data for view {view_name}: {e}")

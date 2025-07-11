@@ -147,7 +147,7 @@ class GoogleSheetsService:
             except gspread.exceptions.WorksheetNotFound:
                 logger.info(f"Worksheet '{sheet_name}' not found, creating new worksheet")
                 try:
-                    ws = sh.add_worksheet(title=sheet_name, rows=25, cols=2)  # 25 rows for all metrics
+                    ws = sh.add_worksheet(title=sheet_name, rows=30, cols=2)  # 30 rows for all metrics including multiple quality entries
                     logger.info(f"New worksheet '{sheet_name}' created successfully")
                 except gspread.exceptions.APIError as e:
                     if e.response.status_code == 403:
@@ -161,7 +161,21 @@ class GoogleSheetsService:
             # Define the metrics headers in Column A
             metrics_headers = [
                 ["Metric Name", "Values"],  # Header row
-                ["META Quality", ""],
+            ]
+
+            # Add quality ratings dynamically
+            quality_ratings = summary_data.get('quality_ratings', {})
+            if quality_ratings:
+                for phone_number, rating in quality_ratings.items():
+                    # Format phone number for display (show last 4 digits)
+                    phone_display = f"...{phone_number[-4:]}" if len(phone_number) > 4 else phone_number
+                    metrics_headers.append([f"META Quality for ({phone_display})", rating])
+            else:
+                # Default META Quality row if no ratings found
+                metrics_headers.append(["META Quality", ""])
+
+            # Add the rest of the metrics
+            metrics_headers.extend([
                 ["LLM Model used", ""],
                 ["Reason for using the model", ""],
                 ["Cost", ""],
@@ -187,7 +201,10 @@ class GoogleSheetsService:
             ]
 
             # Upload the data to the worksheet
-            ws.update('A1:B24', metrics_headers)
+            # Calculate the range based on the number of rows
+            num_rows = len(metrics_headers)
+            range_str = f'A1:B{num_rows}'
+            ws.update(range_str, metrics_headers)
             logger.info(f"Summary data uploaded successfully to '{sheet_name}'")
 
             return True

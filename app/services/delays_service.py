@@ -321,6 +321,69 @@ class DelaysAnalysisService:
             logger.error(f"Error calculating handling percentage for {department}: {e}")
             logger.error(f"Exception details: {str(e)}")
             return 0.0
+
+    def get_quality_ratings(self, department: str) -> Dict[str, str]:
+        """
+        Get quality ratings for a department's phone numbers.
+
+        Args:
+            department: Department name
+
+        Returns:
+            Dictionary mapping phone numbers to quality ratings
+        """
+        try:
+            logger.info(f"Fetching quality ratings for {department}")
+
+            # Get department configuration
+            from app.config import DEPARTMENT_CONFIG
+            config = DEPARTMENT_CONFIG.get(department, {})
+            phone_numbers = config.get('phone_numbers', [])
+
+            if not phone_numbers:
+                logger.warning(f"No phone numbers configured for {department}")
+                return {}
+
+            logger.info(f"Phone numbers for {department}: {phone_numbers}")
+
+            # Fetch quality data from Tableau
+            quality_file = "data/temp/quality_data.csv"
+            if not self.tableau_service.fetch_quality_data(quality_file):
+                logger.error("Failed to fetch quality data from Tableau")
+                return {}
+
+            # Read and process quality data
+            try:
+                import pandas as pd
+                quality_df = pd.read_csv(quality_file)
+                logger.info(f"Quality data shape: {quality_df.shape}")
+                logger.info(f"Quality data columns: {list(quality_df.columns)}")
+
+                # Map phone numbers to quality ratings
+                quality_ratings = {}
+
+                for phone_number in phone_numbers:
+                    # Look for the phone number in the data
+                    phone_match = quality_df[quality_df['Phone Number'].astype(str) == str(phone_number)]
+
+                    if not phone_match.empty:
+                        # Get the NUMBER_QUALITY value
+                        quality_rating = phone_match['NUMBER_QUALITY'].iloc[0]
+                        quality_ratings[phone_number] = str(quality_rating)
+                        logger.info(f"Found quality rating for {phone_number}: {quality_rating}")
+                    else:
+                        logger.warning(f"No quality rating found for phone number: {phone_number}")
+                        quality_ratings[phone_number] = "Not Found"
+
+                return quality_ratings
+
+            except Exception as e:
+                logger.error(f"Error processing quality data: {e}")
+                return {}
+
+        except Exception as e:
+            logger.error(f"Error getting quality ratings for {department}: {e}")
+            return {}
     
     def calculate_first_response_times(self, df: pd.DataFrame, keywords: list = None) -> pd.DataFrame:
         """Calculate first response times for bot messages."""
@@ -763,6 +826,15 @@ class DelaysAnalysisService:
                 "percentage": handling_percentage,
                 "formatted": f"{handling_percentage:.2f}%"
             }
+
+            # Get quality ratings
+            try:
+                quality_ratings = self.get_quality_ratings(department)
+                summary["quality_ratings"] = quality_ratings
+                logger.info(f"Quality ratings for {department}: {quality_ratings}")
+            except Exception as e:
+                logger.error(f"Failed to get quality ratings: {e}")
+                summary["quality_ratings"] = {}
 
             # Upload to Google Sheets if requested
             if upload_to_sheets:
