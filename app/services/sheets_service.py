@@ -2,8 +2,17 @@
 Google Sheets upload service - Service Account only
 """
 
-import gspread
-from google.oauth2.service_account import Credentials as ServiceAccountCredentials
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials as ServiceAccountCredentials
+    GSPREAD_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Google Sheets dependencies not available: {e}")
+    print("Install with: pip install gspread google-auth")
+    GSPREAD_AVAILABLE = False
+    gspread = None
+    ServiceAccountCredentials = None
+
 import pandas as pd
 import os
 import json
@@ -17,6 +26,8 @@ class GoogleSheetsService:
     """Service for uploading data to Google Sheets using Service Account authentication."""
 
     def __init__(self, credentials_file: str):
+        if not GSPREAD_AVAILABLE:
+            raise ImportError("gspread and google-auth are required for Google Sheets functionality. Install with: pip install gspread google-auth")
         self.credentials_file = credentials_file
         self.gc = self._get_gspread_client()
 
@@ -169,7 +180,8 @@ class GoogleSheetsService:
                 for phone_number, rating in quality_ratings.items():
                     # Format phone number for display (show last 4 digits)
                     phone_display = f"...{phone_number[-4:]}" if len(phone_number) > 4 else phone_number
-                    metrics_headers.append([f"META Quality for ({phone_display})", rating])
+                    quality_label = f"META Quality for ({phone_display})"
+                    metrics_headers.append([quality_label, rating])
             else:
                 # Default META Quality row if no ratings found
                 metrics_headers.append(["META Quality", ""])
@@ -198,7 +210,7 @@ class GoogleSheetsService:
                 ["Unclear policy", ""],
                 ["% chats shadowed", ""],
                 ["Reported issue", ""]
-            ]
+            ])
 
             # Upload the data to the worksheet
             # Calculate the range based on the number of rows
@@ -220,6 +232,9 @@ def get_sheets_service() -> GoogleSheetsService:
     Returns:
         GoogleSheetsService instance
     """
+    if not GSPREAD_AVAILABLE:
+        raise ImportError("gspread and google-auth are required for Google Sheets functionality. Install with: pip install gspread google-auth")
+
     logger.info("Getting Google Sheets service")
     logger.info(f"SERVICE_ACCOUNT_FILE (first 50 chars): {SERVICE_ACCOUNT_FILE[:50]}...")
 
