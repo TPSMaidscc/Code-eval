@@ -210,6 +210,13 @@ class TableauService:
             logger.info(f"CSV successfully saved to {csv_output_path}")
             return True
 
+        except Exception as e:
+            logger.error(f"Error fetching data for view {view_name}: {e}")
+            return False
+        finally:
+            if token:
+                self.sign_out(token)
+
     def fetch_quality_data(self, output_file: str) -> bool:
         """
         Fetch quality rating data from the Quality view.
