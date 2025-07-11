@@ -240,7 +240,7 @@ class TableauService:
                 return False
 
             # Get view LUID for Quality view
-            view_luid = self.get_view_luid(token, site_luid, workbook_luid, "Quality")
+            view_luid = self.get_view_luid(token, site_luid, workbook_luid, "Quality Rating")
             if not view_luid:
                 logger.error("Failed to get view LUID for Quality view")
                 return False

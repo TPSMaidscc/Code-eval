@@ -829,11 +829,15 @@ class DelaysAnalysisService:
 
             # Get quality ratings
             try:
+                logger.info(f"Starting quality ratings fetch for {department}")
                 quality_ratings = self.get_quality_ratings(department)
                 summary["quality_ratings"] = quality_ratings
                 logger.info(f"Quality ratings for {department}: {quality_ratings}")
             except Exception as e:
                 logger.error(f"Failed to get quality ratings: {e}")
+                logger.error(f"Quality ratings error traceback: {str(e)}")
+                import traceback
+                logger.error(f"Full quality ratings traceback: {traceback.format_exc()}")
                 summary["quality_ratings"] = {}
 
             # Upload to Google Sheets if requested
